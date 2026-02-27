@@ -1,0 +1,41 @@
+version: "3.9"
+
+services:
+  # ── Backend MAS (FastAPI + WebSocket) ─────────────────────────────────────
+  mas-backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000"   # REST API + WebSocket
+      - "50051:50051" # gRPC
+    environment:
+      - API_HOST=0.0.0.0
+      - API_PORT=8000
+      - LOG_LEVEL=INFO
+      - LLM_BACKEND=mock
+    depends_on:
+      - rabbitmq
+    restart: unless-stopped
+
+  # ── RabbitMQ (broker wiadomości dla produkcji) ─────────────────────────────
+  rabbitmq:
+    image: rabbitmq:3.13-management-alpine
+    ports:
+      - "5672:5672"   # AMQP
+      - "15672:15672" # Management UI
+    environment:
+      RABBITMQ_DEFAULT_USER: czlowiek
+      RABBITMQ_DEFAULT_PASS: roku_secret
+    restart: unless-stopped
+
+  # ── Reverse proxy / API Gateway ────────────────────────────────────────────
+  nginx:
+    image: nginx:1.25-alpine
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - mas-backend
+    restart: unless-stopped

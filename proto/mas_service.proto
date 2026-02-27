@@ -1,0 +1,58 @@
+syntax = "proto3";
+
+package czlowiekroku.mas.v1;
+
+option java_package = "pl.czlowiekroku.mas.v1";
+option java_outer_classname = "MasProto";
+option java_multiple_files = true;
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Usługa MAS – komunikacja binarna o niskiej latencji (Android NDK / desktop)
+// ─────────────────────────────────────────────────────────────────────────────
+
+service AgentService {
+  // Wyślij zadanie do orkiestratora i odbierz wynik (unary RPC)
+  rpc SubmitTask(TaskRequest) returns (TaskResponse);
+
+  // Strumieniowe aktualizacje statusu agentów (server-streaming)
+  rpc StreamAgentStatus(StatusStreamRequest) returns (stream AgentStatusUpdate);
+
+  // Dwukierunkowy strumień (full-duplex) dla interaktywnej rozgrywki
+  rpc GameStream(stream GameEvent) returns (stream GameEvent);
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Wiadomości
+// ─────────────────────────────────────────────────────────────────────────────
+
+message TaskRequest {
+  string client_id  = 1;
+  string task_type  = 2;
+  bytes  payload    = 3;   // JSON zakodowany jako bajty
+  int32  priority   = 4;
+}
+
+message TaskResponse {
+  string task_id = 1;
+  string status  = 2;
+  bytes  result  = 3;
+  string error   = 4;
+}
+
+message StatusStreamRequest {
+  string client_id = 1;
+}
+
+message AgentStatusUpdate {
+  string agent_id    = 1;
+  string role        = 2;
+  string status      = 3;
+  int64  timestamp   = 4;
+}
+
+message GameEvent {
+  string event_type  = 1;
+  string player_id   = 2;
+  bytes  data        = 3;
+  int64  timestamp   = 4;
+}
