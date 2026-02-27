@@ -2,7 +2,7 @@
 Wyspecjalizowane agenty gry AAA – Człowiek Roku.
 
 ContentAgent   – generowanie i wzbogacanie treści (opisy, tekstury, poziomy)
-NarrativeAgent – tworzenie narracji i dialogów (LLM-based)
+NarrativeAgent – tworzenie narracji i dialogów (LLM-based: GPT / Gemini / Mock)
 AnalyticsAgent – analiza zachowań gracza i optymalizacja rozgrywki
 """
 from __future__ import annotations
@@ -12,6 +12,7 @@ import random
 from typing import Any, TYPE_CHECKING
 
 from src.agents.base_agent import BaseAgent
+from src.communication.llm_client import BaseLlmClient, create_llm_client
 from src.models.message import AgentMessage
 
 if TYPE_CHECKING:
@@ -71,15 +72,21 @@ class ContentAgent(BaseAgent):
 class NarrativeAgent(BaseAgent):
     """
     Agent narracyjny tworzący opowieści, dialogi i wątki fabularne.
-    Korzysta z modeli LLM (przez API lub lokalnie).
+    Korzysta z modeli LLM: OpenAI GPT, Google Gemini lub Mock.
+    Backend wybierany przez zmienną środowiskową LLM_BACKEND.
     """
 
-    def __init__(self, broker: "MessageBroker") -> None:
+    def __init__(
+        self,
+        broker: "MessageBroker",
+        llm_client: BaseLlmClient | None = None,
+    ) -> None:
         super().__init__(
             agent_id="narrative_agent",
             role="narrative",
             broker=broker,
         )
+        self._llm = llm_client or create_llm_client()
 
     async def process_task(self, message: AgentMessage) -> dict[str, Any]:
         action = message.payload.get("action", "")
@@ -94,15 +101,16 @@ class NarrativeAgent(BaseAgent):
         self, params: dict[str, Any]
     ) -> dict[str, Any]:
         """
-        Generuje fragment narracji na podstawie kontekstu gry.
-        W produkcji: LangGraph/CrewAI pipeline lub Llama.cpp.
+        Generuje fragment narracji przez wybrany backend LLM.
+        W trybie mock: deterministyczna odpowiedź.
+        W trybie openai/gemini: wywołanie modelu językowego.
         """
         theme = params.get("theme", "przygoda")
-        story = (
-            f"W świecie 'Człowieka Roku' gracz wyrusza na misję '{theme}'. "
-            "Stary mistrz przekazuje mu tajemnicę: klucz do zrozumienia "
-            "własnego przeznaczenia leży w decyzjach, które podejmie."
+        prompt = (
+            f"Napisz krótki (3-4 zdania) dramatyczny fragment historii "
+            f"do gry RPG na temat: {theme}."
         )
+        story = await self._llm.generate(prompt)
         return {"status": "ok", "action": "generate_story", "story": story}
 
     def get_capabilities(self) -> list[str]:

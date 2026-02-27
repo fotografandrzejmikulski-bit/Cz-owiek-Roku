@@ -50,6 +50,29 @@ class ChatMessageResponse(BaseModel):
     echo: str
 
 
+class AgentBuilderRequest(BaseModel):
+    """Żądanie zbudowania nowego agenta w czasie wykonania."""
+    name: str = Field(..., min_length=2, max_length=64,
+                      pattern=r"^[a-z0-9_]+$",
+                      description="Unikalny identyfikator agenta (małe litery, cyfry, _)")
+    role: str = Field(..., min_length=2, max_length=64,
+                      description="Krótka nazwa roli (np. quest_designer)")
+    capabilities: list[str] = Field(..., min_length=1,
+                                    description="Lista możliwości agenta")
+    description: str = Field(
+        default="",
+        max_length=500,
+        description="Opis działania agenta – używany jako kontekst w LLM",
+    )
+
+
+class AgentBuilderResponse(BaseModel):
+    """Odpowiedź po zbudowaniu nowego agenta."""
+    agent_id: str
+    status: str
+    capabilities: list[str]
+
+
 # ---------------------------------------------------------------------------
 # Pomocnicza funkcja: wykrywanie intencji z tekstu
 # ---------------------------------------------------------------------------
@@ -129,6 +152,57 @@ async def get_agent(agent_id: str, request: Request) -> AgentInfo:
         agent_id=agent_id,
         capabilities=meta.get("capabilities", []),
         status=str(meta.get("status", AgentStatus.IDLE)),
+    )
+
+
+@agents_router.post("/", response_model=AgentBuilderResponse, status_code=201)
+async def build_agent(
+    spec: AgentBuilderRequest, request: Request
+) -> AgentBuilderResponse:
+    """
+    **Budowniczy Agentów** – zarejestruj nowego agenta w czasie wykonania.
+
+    Tworzy DynamicAgent z podanymi możliwościami i rejestruje go w orkiestratorze.
+    Agent jest natychmiast dostępny do przyjmowania zadań przez czat lub REST.
+
+    Przykład:
+    ```json
+    {
+        "name": "quest_agent",
+        "role": "projektant_questów",
+        "capabilities": ["quest_design", "narrative"],
+        "description": "Tworzy zadania poboczne dla gracza w oparciu o fabułę"
+    }
+    ```
+    """
+    orchestrator = request.app.state.orchestrator
+    broker = request.app.state.broker
+
+    if spec.name in orchestrator._registry:
+        raise HTTPException(
+            status_code=409,
+            detail=f"Agent '{spec.name}' już istnieje w rejestrze.",
+        )
+
+    # Importuj tutaj, by uniknąć cyklicznych zależności modułów
+    from src.agents.dynamic_agent import DynamicAgent
+
+    agent = DynamicAgent(
+        agent_id=spec.name,
+        role=spec.role,
+        capabilities=spec.capabilities,
+        description=spec.description,
+        broker=broker,
+    )
+    orchestrator.register_agent(spec.name, spec.capabilities)
+    # Uruchom agenta jako zadanie asyncio (nie blokuje odpowiedzi HTTP)
+    import asyncio
+    asyncio.create_task(agent.start())
+
+    return AgentBuilderResponse(
+        agent_id=spec.name,
+        status="uruchomiony",
+        capabilities=spec.capabilities,
     )
 
 

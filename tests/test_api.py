@@ -88,3 +88,71 @@ class TestChatEndpoint:
             json={"text": "test"},
         )
         assert response.status_code == 422
+
+
+class TestAgentBuilderEndpoint:
+    def test_build_new_agent_returns_201(self, client: TestClient) -> None:
+        response = client.post(
+            "/api/v1/agents/",
+            json={
+                "name": "quest_agent",
+                "role": "projektant_questow",
+                "capabilities": ["quest_design", "narrative"],
+                "description": "Projektuje questy poboczne w oparciu o fabule",
+            },
+        )
+        assert response.status_code == 201
+        data = response.json()
+        assert data["agent_id"] == "quest_agent"
+        assert data["status"] == "uruchomiony"
+        assert "quest_design" in data["capabilities"]
+
+    def test_built_agent_appears_in_list(self, client: TestClient) -> None:
+        # Utwórz agenta (może już istnieć z poprzedniego testu – ignoruj 409)
+        client.post(
+            "/api/v1/agents/",
+            json={
+                "name": "lore_agent",
+                "role": "kronikarz",
+                "capabilities": ["lore", "world_building"],
+                "description": "Zarządza historią świata gry",
+            },
+        )
+        response = client.get("/api/v1/agents/")
+        assert response.status_code == 200
+        ids = [a["agent_id"] for a in response.json()]
+        assert "lore_agent" in ids
+
+    def test_duplicate_agent_returns_409(self, client: TestClient) -> None:
+        # Pierwsza rejestracja
+        client.post(
+            "/api/v1/agents/",
+            json={
+                "name": "dup_agent",
+                "role": "duplikat",
+                "capabilities": ["testing"],
+                "description": "",
+            },
+        )
+        # Próba ponownej rejestracji tego samego agenta
+        response = client.post(
+            "/api/v1/agents/",
+            json={
+                "name": "dup_agent",
+                "role": "duplikat",
+                "capabilities": ["testing"],
+                "description": "",
+            },
+        )
+        assert response.status_code == 409
+
+    def test_invalid_agent_name_rejected(self, client: TestClient) -> None:
+        response = client.post(
+            "/api/v1/agents/",
+            json={
+                "name": "Agent Z Spacjami!",
+                "role": "invalid",
+                "capabilities": ["x"],
+            },
+        )
+        assert response.status_code == 422
