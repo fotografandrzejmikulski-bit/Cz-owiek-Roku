@@ -52,3 +52,39 @@ class TestAgentsEndpoint:
     def test_get_unknown_agent_returns_404(self, client: TestClient) -> None:
         response = client.get("/api/v1/agents/nonexistent_agent")
         assert response.status_code == 404
+
+
+class TestChatEndpoint:
+    def test_send_chat_message_returns_accepted(self, client: TestClient) -> None:
+        response = client.post(
+            "/api/v1/chat/",
+            json={"client_id": "desktop-1", "text": "wygeneruj treść o walce"},
+        )
+        assert response.status_code == 200
+        data = response.json()
+        assert data["status"] == "accepted"
+        assert "chat_id" in data
+        assert data["echo"] == "wygeneruj treść o walce"
+
+    def test_chat_analytics_intent(self, client: TestClient) -> None:
+        response = client.post(
+            "/api/v1/chat/",
+            json={"client_id": "desktop-1", "text": "analiza zachowań gracza"},
+        )
+        assert response.status_code == 200
+        data = response.json()
+        assert data["status"] == "accepted"
+
+    def test_chat_empty_text_rejected(self, client: TestClient) -> None:
+        response = client.post(
+            "/api/v1/chat/",
+            json={"client_id": "desktop-1", "text": ""},
+        )
+        assert response.status_code == 422  # walidacja Pydantic
+
+    def test_chat_missing_client_id_rejected(self, client: TestClient) -> None:
+        response = client.post(
+            "/api/v1/chat/",
+            json={"text": "test"},
+        )
+        assert response.status_code == 422

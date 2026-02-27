@@ -24,7 +24,7 @@ from src.agents import (
     NarrativeAgent,
     OrchestratorAgent,
 )
-from src.api.routers import agents_router, tasks_router
+from src.api.routers import agents_router, chat_router, tasks_router
 from src.communication.broker import MessageBroker
 from src.models.message import AgentMessage, MessageType
 
@@ -92,6 +92,7 @@ app.add_middleware(
 
 app.include_router(tasks_router, prefix="/api/v1")
 app.include_router(agents_router, prefix="/api/v1")
+app.include_router(chat_router, prefix="/api/v1")
 
 
 # ---------------------------------------------------------------------------

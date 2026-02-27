@@ -37,6 +37,17 @@ namespace CzlowiekRoku.Desktop.MAS
         string Status
     );
 
+    public record ChatRequest(
+        string ClientId,
+        string Text
+    );
+
+    public record ChatResponse(
+        string ChatId,
+        string Status,
+        string Echo
+    );
+
     // ──────────────────────────────────────────────────────────────────────
     // Interfejs klienta MAS (zasada Dependency Inversion – SOLID)
     // ──────────────────────────────────────────────────────────────────────
@@ -48,6 +59,7 @@ namespace CzlowiekRoku.Desktop.MAS
         Task DisconnectAsync();
         Task<TaskResponse> SubmitTaskAsync(string taskType, Dictionary<string, object> payload);
         Task<List<AgentInfo>> ListAgentsAsync();
+        Task<ChatResponse> SendChatMessageAsync(string text);
     }
 
     // ──────────────────────────────────────────────────────────────────────
@@ -154,6 +166,18 @@ namespace CzlowiekRoku.Desktop.MAS
             var body = await _httpClient.GetStringAsync("/api/v1/agents/");
             return JsonSerializer.Deserialize<List<AgentInfo>>(body, JsonOptions)
                    ?? new List<AgentInfo>();
+        }
+
+        public async Task<ChatResponse> SendChatMessageAsync(string text)
+        {
+            var request = new ChatRequest(_clientId, text);
+            var json = JsonSerializer.Serialize(request, JsonOptions);
+            using var content = new StringContent(json, Encoding.UTF8, "application/json");
+            var response = await _httpClient.PostAsync("/api/v1/chat/", content);
+            response.EnsureSuccessStatusCode();
+            var body = await response.Content.ReadAsStringAsync();
+            return JsonSerializer.Deserialize<ChatResponse>(body, JsonOptions)
+                   ?? throw new InvalidOperationException("Pusta odpowiedź czatu");
         }
 
         public void Dispose()
