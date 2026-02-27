@@ -344,3 +344,246 @@ async def research_capabilities() -> dict[str, Any]:
         "search_providers": ["mock", "tavily"],
         "reflection_loop": True,
     }
+
+
+# ---------------------------------------------------------------------------
+# Router: Edukacja (AAK – Cyfrowa Agora Wiedzy)
+# ---------------------------------------------------------------------------
+
+class EduSessionRequest(BaseModel):
+    """Pytanie ucznia do agenta dydaktycznego."""
+    client_id: str
+    agent_id: str = Field(
+        ...,
+        description="Identyfikator agenta (np. 'mickiewiczai', 'eulerredu')",
+    )
+    query: str = Field(..., min_length=1, max_length=2000)
+    level: str = Field(
+        default="nieznany",
+        description="Poziom realizacji: 'podstawowy' lub 'rozszerzony'",
+    )
+    history: list[dict[str, str]] = Field(
+        default_factory=list,
+        description="Historia rozmowy [{role, content}, ...]",
+    )
+
+
+class EduSessionResponse(BaseModel):
+    """Odpowiedź agenta dydaktycznego."""
+    session_id: str
+    agent_id: str
+    subject: str
+    level: str
+    response: str
+    status: str
+
+
+edu_router = APIRouter(prefix="/edu", tags=["edu"])
+
+
+@edu_router.get("/agents", tags=["edu"])
+async def list_edu_agents(request: Request) -> list[dict[str, str]]:
+    """Zwróć listę dostępnych agentów dydaktycznych (AAK)."""
+    edu_agents = getattr(request.app.state, "edu_agents", {})
+    return [
+        {"agent_id": a.agent_id, "subject": a.subject_name, "domain": a.subject_domain.value}
+        for a in edu_agents.values()
+    ]
+
+
+@edu_router.post("/session", response_model=EduSessionResponse)
+async def edu_session(req: EduSessionRequest, request: Request) -> EduSessionResponse:
+    """
+    Wyślij pytanie do agenta dydaktycznego.
+
+    Pytanie jest przetwarzane synchronicznie (krótkie odpowiedzi) lub
+    asynchronicznie z wynikiem przez WebSocket (długie odpowiedzi).
+    """
+    edu_agents = getattr(request.app.state, "edu_agents", {})
+    agent = edu_agents.get(req.agent_id)
+
+    if agent is None:
+        available = list(edu_agents.keys())
+        raise HTTPException(
+            status_code=404,
+            detail={
+                "error": f"Agent '{req.agent_id}' nie istnieje.",
+                "available": available,
+            },
+        )
+
+    from src.models.message import AgentMessage, MessageType
+    message = AgentMessage(
+        type=MessageType.TASK_REQUEST,
+        sender_id=req.client_id,
+        receiver_id=agent.agent_id,
+        payload={
+            "query":   req.query,
+            "level":   req.level,
+            "history": req.history,
+        },
+    )
+
+    result = await agent.process_task(message)
+
+    return EduSessionResponse(
+        session_id=result.get("session", {}).get("session_id", message.message_id),
+        agent_id=result.get("agent_id", req.agent_id),
+        subject=result.get("subject", ""),
+        level=result.get("level", req.level),
+        response=result.get("response", ""),
+        status=result.get("status", "ok"),
+    )
+
+
+# ---------------------------------------------------------------------------
+# Router: Agenty Specjalistyczne (Inżynieria / GameDev / Pisarstwo / Web)
+# ---------------------------------------------------------------------------
+
+class SpecialistTaskRequest(BaseModel):
+    """Zadanie dla agenta specjalistycznego."""
+    client_id: str
+    agent_id: str = Field(
+        ...,
+        description="np. 'systems_engineer', 'gamedev_agent', 'literary_agent'",
+    )
+    task: str = Field(..., min_length=1, max_length=4000)
+    step: str = Field(
+        default="",
+        description="Opcjonalny krok SOP (np. 'Analysis', 'Generation')",
+    )
+    context: list[dict[str, str]] = Field(default_factory=list)
+
+
+class SpecialistTaskResponse(BaseModel):
+    """Odpowiedź agenta specjalistycznego."""
+    task_id: str
+    agent_id: str
+    domain: str
+    display_name: str
+    response: str
+    sop_steps: list[str]
+    status: str
+
+
+specialist_router = APIRouter(prefix="/specialist", tags=["specialist"])
+
+
+@specialist_router.get("/agents", tags=["specialist"])
+async def list_specialist_agents(request: Request) -> list[dict[str, Any]]:
+    """Zwróć listę dostępnych agentów specjalistycznych z ich Personami."""
+    specialist_agents = getattr(request.app.state, "specialist_agents", {})
+    return [a.get_persona() for a in specialist_agents.values()]
+
+
+@specialist_router.post("/task", response_model=SpecialistTaskResponse)
+async def specialist_task(req: SpecialistTaskRequest, request: Request) -> SpecialistTaskResponse:
+    """Wyślij zadanie do agenta specjalistycznego."""
+    specialist_agents = getattr(request.app.state, "specialist_agents", {})
+    agent = specialist_agents.get(req.agent_id)
+
+    if agent is None:
+        available = list(specialist_agents.keys())
+        raise HTTPException(
+            status_code=404,
+            detail={
+                "error": f"Agent specjalistyczny '{req.agent_id}' nie istnieje.",
+                "available": available,
+            },
+        )
+
+    from src.models.message import AgentMessage, MessageType
+    message = AgentMessage(
+        type=MessageType.TASK_REQUEST,
+        sender_id=req.client_id,
+        receiver_id=agent.agent_id,
+        payload={
+            "task":    req.task,
+            "step":    req.step,
+            "context": req.context,
+        },
+    )
+
+    result = await agent.process_task(message)
+
+    return SpecialistTaskResponse(
+        task_id=message.message_id,
+        agent_id=result.get("agent_id", req.agent_id),
+        domain=result.get("domain", ""),
+        display_name=result.get("display_name", ""),
+        response=result.get("response", ""),
+        sop_steps=result.get("sop_steps", []),
+        status=result.get("status", "ok"),
+    )
+
+
+# ---------------------------------------------------------------------------
+# Router: MAP-Elites / Novelty Search (PCG – Procedural Content Generation)
+# ---------------------------------------------------------------------------
+
+class MapElitesRequest(BaseModel):
+    """Parametry uruchomienia algorytmu MAP-Elites."""
+    solution_dim: int = Field(default=10, ge=2, le=50)
+    grid_dims: list[int] = Field(default=[20, 20])
+    grid_ranges: list[list[float]] = Field(default=[[0.0, 1.0], [0.0, 1.0]])
+    iterations: int = Field(default=100, ge=10, le=1000)
+    sigma: float = Field(default=0.1, ge=0.01, le=1.0)
+    batch_size: int = Field(default=32, ge=8, le=128)
+
+
+class MapElitesResponse(BaseModel):
+    """Wyniki algorytmu MAP-Elites."""
+    run_id: str
+    iterations: int
+    archive_size: int
+    coverage: float
+    best_objective: float | None
+    archive_info: dict[str, Any]
+    status: str
+
+
+pcg_router = APIRouter(prefix="/pcg", tags=["pcg"])
+
+
+@pcg_router.post("/map-elites", response_model=MapElitesResponse)
+async def run_map_elites(req: MapElitesRequest) -> MapElitesResponse:
+    """
+    Uruchom algorytm MAP-Elites do proceduralnej generacji treści.
+
+    Używa wbudowanego NoveltyEvaluator (ocena 'grywalności' poziomu gry).
+    W produkcji: zamień ewaluator na wywołanie LLM lub symulatora gry.
+    """
+    from src.agents.novelty_search import (
+        GridArchive, GaussianEmitter, MapElitesScheduler, NoveltyEvaluator,
+    )
+    import uuid
+
+    run_id = str(uuid.uuid4())
+
+    ranges_typed = [(r[0], r[1]) for r in req.grid_ranges]
+
+    archive = GridArchive(
+        solution_dim=req.solution_dim,
+        dims=req.grid_dims,
+        ranges=ranges_typed,
+    )
+    emitters = [GaussianEmitter(archive, sigma=req.sigma, batch_size=req.batch_size)]
+    scheduler = MapElitesScheduler(archive, emitters)
+
+    scheduler.run(
+        evaluator=NoveltyEvaluator.evaluate,
+        iterations=req.iterations,
+    )
+
+    stats = scheduler.stats()
+    best = archive.best_elite()
+
+    return MapElitesResponse(
+        run_id=run_id,
+        iterations=stats["iteration"],
+        archive_size=stats["archive_size"],
+        coverage=stats["coverage"],
+        best_objective=best.objective if best else None,
+        archive_info=archive.to_dict(),
+        status="completed",
+    )

@@ -52,9 +52,13 @@ _CRISIS_RESOURCES = (
 
 # Słowa kluczowe sygnalizujace potencjalny kryzys psychiczny
 _CRISIS_KEYWORDS = (
-    "samobójstwo", "samobojstwo", "zabic sie", "zabić się",
-    "nie chce zyc", "nie chcę żyć", "skrzywdzić siebie",
+    "samobójstwo", "samobójcz", "samobojstwo", "samobojcz",
+    "zabić się", "się zabić", "zabic sie", "sie zabic",
+    "nie chce zyc", "nie chcę żyć",
+    "skrzywdzić siebie", "skrzywdzic siebie",
     "samookaleczen", "okalecz",
+    "chcę umrzeć", "chce umrzec",
+    "chcę się zabić", "chce sie zabic",
 )
 
 

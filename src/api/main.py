@@ -24,8 +24,18 @@ from src.agents import (
     DeepResearchOrchestrator,
     NarrativeAgent,
     OrchestratorAgent,
+    create_all_edu_agents,
+    create_all_specialist_agents,
 )
-from src.api.routers import agents_router, chat_router, research_router, tasks_router
+from src.api.routers import (
+    agents_router,
+    chat_router,
+    edu_router,
+    pcg_router,
+    research_router,
+    specialist_router,
+    tasks_router,
+)
 from src.communication.broker import MessageBroker
 from src.models.message import AgentMessage, MessageType
 
@@ -54,6 +64,14 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     analytics_agent = AnalyticsAgent(broker=broker)
     deep_research_agent = DeepResearchOrchestrator(broker=broker)
 
+    # Educational agents (AAK – Cyfrowa Agora Wiedzy) – 17 single-instance + 6 Polyglot
+    edu_agents_list = create_all_edu_agents(broker=broker)
+    edu_agents_dict = {a.agent_id: a for a in edu_agents_list}
+
+    # Specialist agents – 6 domain experts
+    specialist_agents_list = create_all_specialist_agents(broker=broker)
+    specialist_agents_dict = {a.agent_id: a for a in specialist_agents_list}
+
     for agent in (content_agent, narrative_agent, analytics_agent):
         orchestrator.register_agent(agent.agent_id, agent.get_capabilities())
     # Register DeepResearchOrchestrator directly (not through main orchestrator pipeline)
@@ -64,6 +82,8 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     agents_to_start = [
         orchestrator, content_agent, narrative_agent,
         analytics_agent, deep_research_agent,
+        *edu_agents_list,
+        *specialist_agents_list,
     ]
     for agent in agents_to_start:
         task = asyncio.create_task(agent.start())
@@ -72,8 +92,15 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     # Przekaż zależności do routerów przez state aplikacji
     app.state.broker = broker
     app.state.orchestrator = orchestrator
+    app.state.edu_agents = edu_agents_dict
+    app.state.specialist_agents = specialist_agents_dict
 
-    logger.info("System MAS uruchomiony z %d agentami.", len(agents_to_start))
+    logger.info(
+        "System MAS uruchomiony z %d agentami (%d edu, %d specialist).",
+        len(agents_to_start),
+        len(edu_agents_list),
+        len(specialist_agents_list),
+    )
     yield
 
     for task in _agent_tasks:
@@ -106,6 +133,9 @@ app.include_router(tasks_router, prefix="/api/v1")
 app.include_router(agents_router, prefix="/api/v1")
 app.include_router(chat_router, prefix="/api/v1")
 app.include_router(research_router, prefix="/api/v1")
+app.include_router(edu_router, prefix="/api/v1")
+app.include_router(specialist_router, prefix="/api/v1")
+app.include_router(pcg_router, prefix="/api/v1")
 
 
 # ---------------------------------------------------------------------------
