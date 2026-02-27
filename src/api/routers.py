@@ -3,7 +3,7 @@ Routery FastAPI dla zasobów REST API.
 """
 from __future__ import annotations
 
-import uuid
+import asyncio
 from typing import Any
 
 from fastapi import APIRouter, HTTPException, Request
@@ -49,7 +49,6 @@ async def submit_task(task: TaskRequest, request: Request) -> TaskResponse:
     Przyjmij zadanie od klienta i przekaż orkiestratorowi.
     Wynik zostanie wysłany przez WebSocket (async push).
     """
-    orchestrator = request.app.state.orchestrator
     broker = request.app.state.broker
 
     message = AgentMessage(
@@ -60,7 +59,6 @@ async def submit_task(task: TaskRequest, request: Request) -> TaskResponse:
     )
 
     # Publikuj asynchronicznie – nie blokuj odpowiedzi HTTP
-    import asyncio
     asyncio.create_task(broker.publish(message))
 
     return TaskResponse(

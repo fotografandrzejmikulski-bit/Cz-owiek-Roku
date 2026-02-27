@@ -25,8 +25,8 @@ services:
       - "5672:5672"   # AMQP
       - "15672:15672" # Management UI
     environment:
-      RABBITMQ_DEFAULT_USER: czlowiek
-      RABBITMQ_DEFAULT_PASS: roku_secret
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER:-czlowiek}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASS:?RABBITMQ_PASS env variable is required}
     restart: unless-stopped
 
   # ── Reverse proxy / API Gateway ────────────────────────────────────────────
