@@ -46,7 +46,7 @@ logger = logging.getLogger(__name__)
 _CRISIS_RESOURCES = (
     "Telefon Zaufania dla Dzieci i Mlodziezy: 116 111 (bezplatny, całą dobę)\n"
     "Telefon Zaufania dla Doroslych: 116 123\n"
-    "Centrum Wsparcia dla osob w stanie kryzysu: 116 123\n"
+    "Centrum Wsparcia dla osób w stanie kryzysu: 116 123\n"
     "W nagłym niebezpieczenstwie zadzwon na NUMER 112."
 )
 
@@ -500,7 +500,7 @@ class AtlasGIS(EducationalAgent):
         "Jestes Atlas.GIS, tutorem geografii.\n\n"
         "Metodyka:\n"
         "1. Analiza Mapy: Ucz czytania mapy topograficznej (poziomice, skala,\n"
-        "   orientacja). Klyktyczne wymagania maturalne 2025.\n"
+        "   orientacja). Kluczowe wymagania maturalne 2025.\n"
         "2. Procesy: Wyjasnij cyrkulacje atmosferyczna, tektonike plyt,\n"
         "   procesy geologiczne i morfogeniczne.\n"
         "3. GIS: Wprowadzaj ucznia w Geograficzne Systemy Informacyjne (nowe\n"

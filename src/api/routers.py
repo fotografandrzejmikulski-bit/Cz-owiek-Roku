@@ -587,3 +587,98 @@ async def run_map_elites(req: MapElitesRequest) -> MapElitesResponse:
         archive_info=archive.to_dict(),
         status="completed",
     )
+
+
+# ---------------------------------------------------------------------------
+# Router: Youth Agents (Alpha/Z ecosystem)
+# ---------------------------------------------------------------------------
+
+class YouthSessionRequest(BaseModel):
+    """Zapytanie do agenta dla Generacji Alpha/Z."""
+    client_id: str
+    agent_id: str = Field(
+        ...,
+        description="np. 'skarbnikagent', 'biooptymizer', 'stratgesportowy'",
+    )
+    query: str = Field(..., min_length=1, max_length=2000)
+    age_group: str = Field(
+        default="teen",
+        description="'preteen' (10-12), 'teen' (13-17), 'young_adult' (18-24)",
+    )
+    history: list[dict[str, str]] = Field(default_factory=list)
+    metadata: dict[str, Any] = Field(default_factory=dict)
+
+
+class YouthSessionResponse(BaseModel):
+    """Odpowiedź agenta youth."""
+    session_id: str
+    agent_id: str
+    display_name: str
+    age_group: str
+    safety_level: str
+    response: str
+    status: str
+
+
+youth_router = APIRouter(prefix="/youth", tags=["youth"])
+
+
+@youth_router.get("/agents", tags=["youth"])
+async def list_youth_agents(request: Request) -> list[dict[str, str]]:
+    """Zwróć listę dostępnych agentów dla Generacji Alpha/Z."""
+    youth_agents = getattr(request.app.state, "youth_agents", {})
+    return [a.get_info() for a in youth_agents.values()]
+
+
+@youth_router.post("/session", response_model=YouthSessionResponse)
+async def youth_session(req: YouthSessionRequest, request: Request) -> YouthSessionResponse:
+    """Wyślij zapytanie do agenta dla Generacji Alpha/Z."""
+    youth_agents = getattr(request.app.state, "youth_agents", {})
+    agent = youth_agents.get(req.agent_id)
+
+    if agent is None:
+        available = list(youth_agents.keys())
+        raise HTTPException(
+            status_code=404,
+            detail={
+                "error": f"Agent youth '{req.agent_id}' nie istnieje.",
+                "available": available,
+            },
+        )
+
+    from src.models.message import AgentMessage, MessageType
+    message = AgentMessage(
+        type=MessageType.TASK_REQUEST,
+        sender_id=req.client_id,
+        receiver_id=agent.agent_id,
+        payload={
+            "query":     req.query,
+            "age_group": req.age_group,
+            "history":   req.history,
+            "metadata":  req.metadata,
+        },
+    )
+
+    result = await agent.process_task(message)
+
+    return YouthSessionResponse(
+        session_id=result.get("session", {}).get("session_id", message.message_id),
+        agent_id=result.get("agent_id", req.agent_id),
+        display_name=result.get("display_name", ""),
+        age_group=result.get("age_group", req.age_group),
+        safety_level=result.get("session", {}).get("safety_level", "green"),
+        response=result.get("response", ""),
+        status=result.get("status", "ok"),
+    )
+
+
+@youth_router.get("/safety/dashboard", tags=["youth"])
+async def parent_safety_dashboard(request: Request) -> dict[str, Any]:
+    """
+    Dashboard Trendów dla rodziców (§9.3).
+    Zwraca anomalie – BEZ treści rozmów.
+    """
+    coordinator = getattr(request.app.state, "safety_coordinator", None)
+    if coordinator is None:
+        return {"total_alerts": 0, "critical_alerts": 0, "recent_alerts": []}
+    return coordinator.get_parent_dashboard()

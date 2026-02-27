@@ -363,7 +363,7 @@ class TestNoveltyEvaluator:
         assert objectives[0] < 0.6
 
     def test_behavior_coordinates_are_bounded(self) -> None:
-        solutions = [[random_val / 10 for random_val in range(10)]]
+        solutions = [[i / 10 for i in range(10)]]
         _, behaviors = NoveltyEvaluator.evaluate(solutions)
         for b in behaviors:
             for coord in b:

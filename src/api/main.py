@@ -26,6 +26,9 @@ from src.agents import (
     OrchestratorAgent,
     create_all_edu_agents,
     create_all_specialist_agents,
+    create_all_youth_agents,
+    CrossAgentBus,
+    SafetyCoordinator,
 )
 from src.api.routers import (
     agents_router,
@@ -35,6 +38,7 @@ from src.api.routers import (
     research_router,
     specialist_router,
     tasks_router,
+    youth_router,
 )
 from src.communication.broker import MessageBroker
 from src.models.message import AgentMessage, MessageType
@@ -72,6 +76,12 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     specialist_agents_list = create_all_specialist_agents(broker=broker)
     specialist_agents_dict = {a.agent_id: a for a in specialist_agents_list}
 
+    # Youth agents (Alpha/Z ecosystem) – 11 agents
+    cross_agent_bus = CrossAgentBus()
+    safety_coordinator = SafetyCoordinator(bus=cross_agent_bus)
+    youth_agents_list = create_all_youth_agents(broker=broker, bus=cross_agent_bus)
+    youth_agents_dict = {a.agent_id: a for a in youth_agents_list}
+
     for agent in (content_agent, narrative_agent, analytics_agent):
         orchestrator.register_agent(agent.agent_id, agent.get_capabilities())
     # Register DeepResearchOrchestrator directly (not through main orchestrator pipeline)
@@ -84,6 +94,7 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
         analytics_agent, deep_research_agent,
         *edu_agents_list,
         *specialist_agents_list,
+        *youth_agents_list,
     ]
     for agent in agents_to_start:
         task = asyncio.create_task(agent.start())
@@ -94,12 +105,15 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     app.state.orchestrator = orchestrator
     app.state.edu_agents = edu_agents_dict
     app.state.specialist_agents = specialist_agents_dict
+    app.state.youth_agents = youth_agents_dict
+    app.state.safety_coordinator = safety_coordinator
 
     logger.info(
-        "System MAS uruchomiony z %d agentami (%d edu, %d specialist).",
+        "System MAS uruchomiony z %d agentami (%d edu, %d specialist, %d youth).",
         len(agents_to_start),
         len(edu_agents_list),
         len(specialist_agents_list),
+        len(youth_agents_list),
     )
     yield
 
@@ -136,6 +150,7 @@ app.include_router(research_router, prefix="/api/v1")
 app.include_router(edu_router, prefix="/api/v1")
 app.include_router(specialist_router, prefix="/api/v1")
 app.include_router(pcg_router, prefix="/api/v1")
+app.include_router(youth_router, prefix="/api/v1")
 
 
 # ---------------------------------------------------------------------------
