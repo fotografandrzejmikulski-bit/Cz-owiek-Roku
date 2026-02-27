@@ -21,10 +21,11 @@ from fastapi.middleware.cors import CORSMiddleware
 from src.agents import (
     AnalyticsAgent,
     ContentAgent,
+    DeepResearchOrchestrator,
     NarrativeAgent,
     OrchestratorAgent,
 )
-from src.api.routers import agents_router, chat_router, tasks_router
+from src.api.routers import agents_router, chat_router, research_router, tasks_router
 from src.communication.broker import MessageBroker
 from src.models.message import AgentMessage, MessageType
 
@@ -45,14 +46,25 @@ _agent_tasks: list[asyncio.Task] = []
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     """Uruchom / zatrzymaj agentów razem z aplikacją."""
+    # Wyczyść stare zadania przed ponownym uruchomieniem (np. w testach)
+    _agent_tasks.clear()
+
     content_agent = ContentAgent(broker=broker)
     narrative_agent = NarrativeAgent(broker=broker)
     analytics_agent = AnalyticsAgent(broker=broker)
+    deep_research_agent = DeepResearchOrchestrator(broker=broker)
 
     for agent in (content_agent, narrative_agent, analytics_agent):
         orchestrator.register_agent(agent.agent_id, agent.get_capabilities())
+    # Register DeepResearchOrchestrator directly (not through main orchestrator pipeline)
+    orchestrator.register_agent(
+        deep_research_agent.agent_id, deep_research_agent.get_capabilities()
+    )
 
-    agents_to_start = [orchestrator, content_agent, narrative_agent, analytics_agent]
+    agents_to_start = [
+        orchestrator, content_agent, narrative_agent,
+        analytics_agent, deep_research_agent,
+    ]
     for agent in agents_to_start:
         task = asyncio.create_task(agent.start())
         _agent_tasks.append(task)
@@ -93,6 +105,7 @@ app.add_middleware(
 app.include_router(tasks_router, prefix="/api/v1")
 app.include_router(agents_router, prefix="/api/v1")
 app.include_router(chat_router, prefix="/api/v1")
+app.include_router(research_router, prefix="/api/v1")
 
 
 # ---------------------------------------------------------------------------

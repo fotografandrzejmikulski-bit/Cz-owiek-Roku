@@ -85,6 +85,8 @@ def _infer_task_type(text: str) -> tuple[str, dict[str, Any]]:
     lower = text.lower()
     if any(k in lower for k in ("analiz", "statystyki", "zachowania", "analytics", "analityk")):
         return "analytics", {}
+    if any(k in lower for k in ("badaj", "zbadaj", "raport", "research", "przeanalizuj", "przebadaj")):
+        return "deep_research", {"query": text}
     # Domyślnie: generowanie treści (narracja + wzbogacanie)
     return "generate_content", {"theme": text}
 
@@ -248,3 +250,97 @@ async def send_chat_message(
         status="accepted",
         echo=chat.text,
     )
+
+
+# ---------------------------------------------------------------------------
+# Schematy: Deep Research
+# ---------------------------------------------------------------------------
+
+class ResearchRequest(BaseModel):
+    """Żądanie uruchomienia procesu Deep Research."""
+    client_id: str
+    query: str = Field(..., min_length=5, max_length=2000,
+                       description="Pytanie badawcze w języku naturalnym")
+    max_iterations: int = Field(
+        default=3, ge=1, le=5,
+        description="Maks. liczba iteracji pętli refleksji Critic→Planner",
+    )
+    reflection_threshold: int = Field(
+        default=75, ge=0, le=100,
+        description="Minimalny wynik jakości (0-100) do zakończenia pętli",
+    )
+
+
+class ResearchResponse(BaseModel):
+    """Odpowiedź na uruchomienie badania – wynik przyjedzie przez WebSocket."""
+    research_id: str
+    status: str
+    query: str
+
+
+class ResearchProgressEvent(BaseModel):
+    """Zdarzenie postępu badania wysyłane przez WebSocket."""
+    research_id: str
+    status: str
+    query: str
+    iteration: int = 0
+    quality_score: int = 0
+    sub_questions: list[str] = []
+    final_report: str = ""
+    feedback: list[str] = []
+
+
+# ---------------------------------------------------------------------------
+# Router: Deep Research
+# ---------------------------------------------------------------------------
+research_router = APIRouter(prefix="/research", tags=["research"])
+
+
+@research_router.post("/", response_model=ResearchResponse)
+async def start_research(
+    research: ResearchRequest, request: Request
+) -> ResearchResponse:
+    """
+    **Deep Research** – uruchom wieloetapowy proces badawczy.
+
+    Potok: Planner → Researcher(fan-out) → Critic(refleksja) → Writer.
+    Postęp i wynik końcowy dotrą przez WebSocket jako zdarzenia
+    ``research_progress``.
+
+    Przykłady zapytań:
+    - ``"Analiza trendów w AI w 2025 roku"``
+    - ``"Jakie są najlepsze strategie monetyzacji gier mobilnych?"``
+    - ``"Porównaj frameworki do budowy agentów AI"``
+    """
+    broker = request.app.state.broker
+
+    message = AgentMessage(
+        type=MessageType.TASK_REQUEST,
+        sender_id=research.client_id,
+        receiver_id="deep_research_orchestrator",
+        payload={
+            "query": research.query,
+            "max_iterations": research.max_iterations,
+            "reflection_threshold": research.reflection_threshold,
+        },
+    )
+
+    asyncio.create_task(broker.publish(message))
+
+    return ResearchResponse(
+        research_id=message.message_id,
+        status="accepted",
+        query=research.query,
+    )
+
+
+@research_router.get("/status", tags=["research"])
+async def research_capabilities() -> dict[str, Any]:
+    """Zwróć informacje o możliwościach systemu Deep Research."""
+    return {
+        "pipeline": ["planner", "researcher_fan_out", "critic_reflector", "writer"],
+        "max_parallel_researchers": 5,
+        "supported_backends": ["mock", "openai", "gemini"],
+        "search_providers": ["mock", "tavily"],
+        "reflection_loop": True,
+    }

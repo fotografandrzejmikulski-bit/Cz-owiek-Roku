@@ -48,6 +48,32 @@ namespace CzlowiekRoku.Desktop.MAS
         string Echo
     );
 
+    public record AgentBuilderRequest(
+        string Name,
+        string Role,
+        List<string> Capabilities,
+        string Description = ""
+    );
+
+    public record AgentBuilderResponse(
+        string AgentId,
+        string Status,
+        List<string> Capabilities
+    );
+
+    public record ResearchRequest(
+        string ClientId,
+        string Query,
+        int MaxIterations = 3,
+        int ReflectionThreshold = 75
+    );
+
+    public record ResearchResponse(
+        string ResearchId,
+        string Status,
+        string Query
+    );
+
     // ──────────────────────────────────────────────────────────────────────
     // Interfejs klienta MAS (zasada Dependency Inversion – SOLID)
     // ──────────────────────────────────────────────────────────────────────
@@ -60,6 +86,10 @@ namespace CzlowiekRoku.Desktop.MAS
         Task<TaskResponse> SubmitTaskAsync(string taskType, Dictionary<string, object> payload);
         Task<List<AgentInfo>> ListAgentsAsync();
         Task<ChatResponse> SendChatMessageAsync(string text);
+        Task<AgentBuilderResponse> RegisterAgentAsync(
+            string name, string role, List<string> capabilities, string description = "");
+        Task<ResearchResponse> StartResearchAsync(
+            string query, int maxIterations = 3, int reflectionThreshold = 75);
     }
 
     // ──────────────────────────────────────────────────────────────────────
@@ -178,6 +208,32 @@ namespace CzlowiekRoku.Desktop.MAS
             var body = await response.Content.ReadAsStringAsync();
             return JsonSerializer.Deserialize<ChatResponse>(body, JsonOptions)
                    ?? throw new InvalidOperationException("Pusta odpowiedź czatu");
+        }
+
+        public async Task<AgentBuilderResponse> RegisterAgentAsync(
+            string name, string role, List<string> capabilities, string description = "")
+        {
+            var request = new AgentBuilderRequest(name, role, capabilities, description);
+            var json = JsonSerializer.Serialize(request, JsonOptions);
+            using var content = new StringContent(json, Encoding.UTF8, "application/json");
+            var response = await _httpClient.PostAsync("/api/v1/agents/", content);
+            response.EnsureSuccessStatusCode();
+            var body = await response.Content.ReadAsStringAsync();
+            return JsonSerializer.Deserialize<AgentBuilderResponse>(body, JsonOptions)
+                   ?? throw new InvalidOperationException("Pusta odpowiedź rejestratora");
+        }
+
+        public async Task<ResearchResponse> StartResearchAsync(
+            string query, int maxIterations = 3, int reflectionThreshold = 75)
+        {
+            var request = new ResearchRequest(_clientId, query, maxIterations, reflectionThreshold);
+            var json = JsonSerializer.Serialize(request, JsonOptions);
+            using var content = new StringContent(json, Encoding.UTF8, "application/json");
+            var response = await _httpClient.PostAsync("/api/v1/research/", content);
+            response.EnsureSuccessStatusCode();
+            var body = await response.Content.ReadAsStringAsync();
+            return JsonSerializer.Deserialize<ResearchResponse>(body, JsonOptions)
+                   ?? throw new InvalidOperationException("Pusta odpowiedź badania");
         }
 
         public void Dispose()

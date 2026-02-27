@@ -36,5 +36,19 @@ class Settings:
     # Timeout delegowania zadań (sekundy)
     agent_task_timeout: int = int(os.getenv("AGENT_TASK_TIMEOUT", "30"))
 
+    # ── Deep Research ──────────────────────────────────────────────────────
+    # Klucz Tavily (narzędzie wyszukiwania dla agentów)
+    tavily_api_key: str = os.getenv("TAVILY_API_KEY", "")
+    # Max równoległych wątków badawczych (Fan-out)
+    research_max_parallel: int = int(os.getenv("RESEARCH_MAX_PARALLEL", "5"))
+    # Próg jakości zatrzymujący pętle refleksji (0-100)
+    research_reflection_threshold: int = int(
+        os.getenv("RESEARCH_REFLECTION_THRESHOLD", "75")
+    )
+    # Maksymalna liczba iteracji pętli Critic→Planner
+    research_max_iterations: int = int(os.getenv("RESEARCH_MAX_ITERATIONS", "3"))
+    # Model LLM dla szybkich pracowników (Worker); domyślnie = llm_backend
+    llm_worker_backend: str = os.getenv("LLM_WORKER_BACKEND", "")  # fallback to llm_backend
+
 
 settings = Settings()

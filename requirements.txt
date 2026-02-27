@@ -7,3 +7,5 @@ pytest-asyncio>=0.23.0
 # Opcjonalne backendy LLM (zainstaluj według potrzeb)
 openai>=1.51.0
 google-generativeai>=0.8.3
+# Opcjonalne narzędzia wyszukiwania dla Deep Research
+tavily-python>=0.7.22

@@ -138,6 +138,12 @@ class OrchestratorAgent(BaseAgent):
                     "payload": {"action": "analyze", "params": payload},
                 },
             ],
+            "deep_research": [
+                {
+                    "capability": "deep_research",
+                    "payload": {**payload},
+                },
+            ],
         }
         return pipelines.get(task_type, [])
 

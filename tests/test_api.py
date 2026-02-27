@@ -156,3 +156,41 @@ class TestAgentBuilderEndpoint:
             },
         )
         assert response.status_code == 422
+
+
+class TestResearchEndpoint:
+    def test_start_research_returns_accepted(self, client: TestClient) -> None:
+        response = client.post(
+            "/api/v1/research/",
+            json={
+                "client_id": "desktop-1",
+                "query": "Jak dzialaja systemy wieloagentowe?",
+                "max_iterations": 2,
+                "reflection_threshold": 70,
+            },
+        )
+        assert response.status_code == 200
+        data = response.json()
+        assert data["status"] == "accepted"
+        assert "research_id" in data
+        assert data["query"] == "Jak dzialaja systemy wieloagentowe?"
+
+    def test_research_query_too_short_rejected(self, client: TestClient) -> None:
+        response = client.post(
+            "/api/v1/research/",
+            json={"client_id": "x", "query": "AI"},  # za krótkie
+        )
+        assert response.status_code == 422
+
+    def test_research_capabilities_endpoint(self, client: TestClient) -> None:
+        response = client.get("/api/v1/research/status")
+        assert response.status_code == 200
+        data = response.json()
+        assert "pipeline" in data
+        assert data["reflection_loop"] is True
+
+    def test_deep_research_agent_in_agents_list(self, client: TestClient) -> None:
+        response = client.get("/api/v1/agents/")
+        assert response.status_code == 200
+        ids = [a["agent_id"] for a in response.json()]
+        assert "deep_research_orchestrator" in ids
