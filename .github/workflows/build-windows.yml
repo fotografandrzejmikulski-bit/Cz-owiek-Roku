@@ -1,0 +1,187 @@
+# Człowiek Roku Desktop — Budowanie instalatorów Windows (EXE + MSI)
+# Plik: .github/workflows/build-windows.yml
+#
+# Wyzwalacze:
+#   - push tagu v*.*.*           → pełny build + GitHub Release z plikami
+#   - PR do main zmieniający klienta desktop lub ten workflow → weryfikacja
+#   - ręczne uruchomienie (workflow_dispatch) z opcjonalnym numerem wersji
+
+name: Windows Desktop Build (EXE + MSI)
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'clients/desktop/**'
+      - '.github/workflows/build-windows.yml'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Numer wersji (np. 1.2.0)'
+        required: false
+        default: '1.0.0'
+
+permissions:
+  contents: write   # wymagane do tworzenia GitHub Release
+
+jobs:
+  build-windows:
+    name: Build Windows Installer (EXE + MSI)
+    runs-on: windows-latest
+
+    env:
+      DOTNET_NOLOGO: true
+      DOTNET_CLI_TELEMETRY_OPTOUT: true
+
+    steps:
+      # ─── 1. Checkout ──────────────────────────────────────────────────
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # ─── 2. Ustal numer wersji ────────────────────────────────────────
+      - name: Determine version
+        id: version
+        shell: pwsh
+        run: |
+          if ("${{ github.event_name }}" -eq "workflow_dispatch") {
+            $v = "${{ inputs.version }}"
+          } elseif ("${{ github.ref_type }}" -eq "tag") {
+            $v = "${{ github.ref_name }}".TrimStart("v")
+          } else {
+            $sha = "${{ github.sha }}".Substring(0, 7)
+            $v   = "0.0.0-dev.$sha"
+          }
+          "VERSION=$v" | Out-File -Append $env:GITHUB_OUTPUT
+          Write-Host "Wersja: $v"
+
+      # ─── 3. .NET 8 SDK ────────────────────────────────────────────────
+      - name: Setup .NET 8
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      # ─── 4. WiX v4 + UI extension ─────────────────────────────────────
+      - name: Install WiX Toolset v4
+        run: |
+          dotnet tool install --global wix
+          wix extension add WixToolset.UI.wixext --global
+
+      # ─── 5. Restore ───────────────────────────────────────────────────
+      - name: Restore NuGet packages
+        run: >
+          dotnet restore
+          clients/desktop/CzlowiekRoku.Desktop.csproj
+          --runtime win-x64
+
+      # ─── 6. Build ─────────────────────────────────────────────────────
+      - name: Build
+        run: >
+          dotnet build
+          clients/desktop/CzlowiekRoku.Desktop.csproj
+          --configuration Release
+          --runtime win-x64
+          --no-restore
+          -p:Version=${{ steps.version.outputs.VERSION }}
+
+      # ─── 7. Publish: przenośny single-file EXE ────────────────────────
+      - name: Publish – portable EXE (self-contained, single file)
+        run: >
+          dotnet publish
+          clients/desktop/CzlowiekRoku.Desktop.csproj
+          --configuration Release
+          --runtime win-x64
+          --self-contained true
+          -p:PublishSingleFile=true
+          -p:IncludeNativeLibrariesForSelfExtract=true
+          -p:Version=${{ steps.version.outputs.VERSION }}
+          --output build/desktop/single-file
+          --no-build
+
+      - name: Rename portable EXE
+        shell: pwsh
+        run: |
+          $v = "${{ steps.version.outputs.VERSION }}"
+          New-Item -ItemType Directory -Force -Path dist | Out-Null
+          Copy-Item "build/desktop/single-file/CzlowiekRoku.Desktop.exe" `
+                    "dist/CzlowiekRoku-v$v-portable.exe"
+          Write-Host "Portable EXE: dist/CzlowiekRoku-v$v-portable.exe"
+
+      # ─── 8. Publish: katalog dla MSI ─────────────────────────────────
+      - name: Publish – directory (for MSI packaging)
+        run: >
+          dotnet publish
+          clients/desktop/CzlowiekRoku.Desktop.csproj
+          --configuration Release
+          --runtime win-x64
+          --self-contained true
+          -p:PublishSingleFile=false
+          -p:Version=${{ steps.version.outputs.VERSION }}
+          --output build/desktop/msi-source
+
+      # ─── 9. Build MSI via WiX v4 ────────────────────────────────────
+      - name: Build MSI installer
+        shell: pwsh
+        run: |
+          $v = "${{ steps.version.outputs.VERSION }}"
+          wix build clients/desktop/installer/Product.wxs `
+            -ext WixToolset.UI.wixext `
+            -d "PublishDir=build\desktop\msi-source\" `
+            -d "Version=$v" `
+            -o "dist/CzlowiekRoku-v$v-setup.msi"
+          Write-Host "MSI: dist/CzlowiekRoku-v$v-setup.msi"
+
+      # ─── 10. Upload artifacts ────────────────────────────────────────
+      - name: Upload portable EXE artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: CzlowiekRoku-v${{ steps.version.outputs.VERSION }}-portable-exe
+          path: dist/CzlowiekRoku-v${{ steps.version.outputs.VERSION }}-portable.exe
+          retention-days: 30
+
+      - name: Upload MSI installer artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: CzlowiekRoku-v${{ steps.version.outputs.VERSION }}-setup-msi
+          path: dist/CzlowiekRoku-v${{ steps.version.outputs.VERSION }}-setup.msi
+          retention-days: 30
+
+      # ─── 11. GitHub Release (tylko przy push tagu v*) ────────────────
+      - name: Create GitHub Release
+        if: github.ref_type == 'tag'
+        uses: softprops/action-gh-release@v2
+        with:
+          name: "Człowiek Roku v${{ steps.version.outputs.VERSION }}"
+          body: |
+            ## Człowiek Roku — System Wieloagentowy v${{ steps.version.outputs.VERSION }}
+
+            ### Pliki instalacyjne Windows
+            | Plik | Opis |
+            |------|------|
+            | `CzlowiekRoku-v${{ steps.version.outputs.VERSION }}-portable.exe` | Przenośny EXE — nie wymaga instalacji, uruchom bezpośrednio |
+            | `CzlowiekRoku-v${{ steps.version.outputs.VERSION }}-setup.msi` | Instalator MSI — instaluje aplikację z skrótami |
+
+            ### Wymagania systemowe
+            - Windows 10 / 11 (64-bit)
+            - Sieć: dostęp do backendu MAS API
+
+            ### Konfiguracja
+            Ustaw zmienne środowiskowe przed uruchomieniem:
+            ```
+            MASAPI_URL       = http://<twoj-serwer>:8000   (domyślnie: http://localhost:8000)
+            MASAPI_CLIENT_ID = desktop_user                 (opcjonalne)
+            MASAPI_BACKEND   = mock                         (opcjonalne)
+            ```
+
+            ### Instalacja MSI
+            1. Pobierz `CzlowiekRoku-v${{ steps.version.outputs.VERSION }}-setup.msi`
+            2. Uruchom instalator (może wymagać uprawnień administratora)
+            3. Postępuj zgodnie z instrukcjami instalatora
+            4. Uruchom aplikację z menu Start lub pulpitu
+          files: |
+            dist/CzlowiekRoku-v${{ steps.version.outputs.VERSION }}-portable.exe
+            dist/CzlowiekRoku-v${{ steps.version.outputs.VERSION }}-setup.msi
+          draft: false
+          prerelease: ${{ contains(steps.version.outputs.VERSION, 'dev') }}

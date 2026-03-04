@@ -1,0 +1,196 @@
+"""
+Testy integracyjne API FastAPI (REST).
+Używamy starlette.testclient.TestClient który poprawnie obsługuje lifespan.
+"""
+from __future__ import annotations
+
+import pytest
+from starlette.testclient import TestClient
+
+from src.api.main import app
+
+
+@pytest.fixture(scope="module")
+def client():
+    """Klient testowy z aktywnym lifespan (agenty uruchomione)."""
+    with TestClient(app) as c:
+        yield c
+
+
+class TestTasksEndpoint:
+    def test_submit_task_returns_accepted(self, client: TestClient) -> None:
+        response = client.post(
+            "/api/v1/tasks/",
+            json={
+                "client_id": "test_client",
+                "task_type": "generate_content",
+                "payload": {"theme": "test"},
+            },
+        )
+        assert response.status_code == 200
+        data = response.json()
+        assert data["status"] == "accepted"
+        assert "task_id" in data
+
+
+class TestAgentsEndpoint:
+    def test_list_agents_returns_list(self, client: TestClient) -> None:
+        response = client.get("/api/v1/agents/")
+        assert response.status_code == 200
+        agents = response.json()
+        assert isinstance(agents, list)
+        # Po starcie aplikacji powinno być co najmniej 3 agenty
+        assert len(agents) >= 3
+
+    def test_get_known_agent(self, client: TestClient) -> None:
+        response = client.get("/api/v1/agents/content_agent")
+        assert response.status_code == 200
+        agent = response.json()
+        assert agent["agent_id"] == "content_agent"
+        assert "content" in agent["capabilities"]
+
+    def test_get_unknown_agent_returns_404(self, client: TestClient) -> None:
+        response = client.get("/api/v1/agents/nonexistent_agent")
+        assert response.status_code == 404
+
+
+class TestChatEndpoint:
+    def test_send_chat_message_returns_accepted(self, client: TestClient) -> None:
+        response = client.post(
+            "/api/v1/chat/",
+            json={"client_id": "desktop-1", "text": "wygeneruj treść o walce"},
+        )
+        assert response.status_code == 200
+        data = response.json()
+        assert data["status"] == "accepted"
+        assert "chat_id" in data
+        assert data["echo"] == "wygeneruj treść o walce"
+
+    def test_chat_analytics_intent(self, client: TestClient) -> None:
+        response = client.post(
+            "/api/v1/chat/",
+            json={"client_id": "desktop-1", "text": "analiza zachowań gracza"},
+        )
+        assert response.status_code == 200
+        data = response.json()
+        assert data["status"] == "accepted"
+
+    def test_chat_empty_text_rejected(self, client: TestClient) -> None:
+        response = client.post(
+            "/api/v1/chat/",
+            json={"client_id": "desktop-1", "text": ""},
+        )
+        assert response.status_code == 422  # walidacja Pydantic
+
+    def test_chat_missing_client_id_rejected(self, client: TestClient) -> None:
+        response = client.post(
+            "/api/v1/chat/",
+            json={"text": "test"},
+        )
+        assert response.status_code == 422
+
+
+class TestAgentBuilderEndpoint:
+    def test_build_new_agent_returns_201(self, client: TestClient) -> None:
+        response = client.post(
+            "/api/v1/agents/",
+            json={
+                "name": "quest_agent",
+                "role": "projektant_questow",
+                "capabilities": ["quest_design", "narrative"],
+                "description": "Projektuje questy poboczne w oparciu o fabule",
+            },
+        )
+        assert response.status_code == 201
+        data = response.json()
+        assert data["agent_id"] == "quest_agent"
+        assert data["status"] == "uruchomiony"
+        assert "quest_design" in data["capabilities"]
+
+    def test_built_agent_appears_in_list(self, client: TestClient) -> None:
+        # Utwórz agenta (może już istnieć z poprzedniego testu – ignoruj 409)
+        client.post(
+            "/api/v1/agents/",
+            json={
+                "name": "lore_agent",
+                "role": "kronikarz",
+                "capabilities": ["lore", "world_building"],
+                "description": "Zarządza historią świata gry",
+            },
+        )
+        response = client.get("/api/v1/agents/")
+        assert response.status_code == 200
+        ids = [a["agent_id"] for a in response.json()]
+        assert "lore_agent" in ids
+
+    def test_duplicate_agent_returns_409(self, client: TestClient) -> None:
+        # Pierwsza rejestracja
+        client.post(
+            "/api/v1/agents/",
+            json={
+                "name": "dup_agent",
+                "role": "duplikat",
+                "capabilities": ["testing"],
+                "description": "",
+            },
+        )
+        # Próba ponownej rejestracji tego samego agenta
+        response = client.post(
+            "/api/v1/agents/",
+            json={
+                "name": "dup_agent",
+                "role": "duplikat",
+                "capabilities": ["testing"],
+                "description": "",
+            },
+        )
+        assert response.status_code == 409
+
+    def test_invalid_agent_name_rejected(self, client: TestClient) -> None:
+        response = client.post(
+            "/api/v1/agents/",
+            json={
+                "name": "Agent Z Spacjami!",
+                "role": "invalid",
+                "capabilities": ["x"],
+            },
+        )
+        assert response.status_code == 422
+
+
+class TestResearchEndpoint:
+    def test_start_research_returns_accepted(self, client: TestClient) -> None:
+        response = client.post(
+            "/api/v1/research/",
+            json={
+                "client_id": "desktop-1",
+                "query": "Jak dzialaja systemy wieloagentowe?",
+                "max_iterations": 2,
+                "reflection_threshold": 70,
+            },
+        )
+        assert response.status_code == 200
+        data = response.json()
+        assert data["status"] == "accepted"
+        assert "research_id" in data
+        assert data["query"] == "Jak dzialaja systemy wieloagentowe?"
+
+    def test_research_query_too_short_rejected(self, client: TestClient) -> None:
+        response = client.post(
+            "/api/v1/research/",
+            json={"client_id": "x", "query": "AI"},  # za krótkie
+        )
+        assert response.status_code == 422
+
+    def test_research_capabilities_endpoint(self, client: TestClient) -> None:
+        response = client.get("/api/v1/research/status")
+        assert response.status_code == 200
+        data = response.json()
+        assert "pipeline" in data
+        assert data["reflection_loop"] is True
+
+    def test_deep_research_agent_in_agents_list(self, client: TestClient) -> None:
+        response = client.get("/api/v1/agents/")
+        assert response.status_code == 200
+        ids = [a["agent_id"] for a in response.json()]
+        assert "deep_research_orchestrator" in ids
