@@ -32,3 +32,15 @@ htmlcov/
 # OS
 .DS_Store
 Thumbs.db
+
+# ── Windows Desktop Build Artifacts ─────────────────────────────────────
+# Wyniki budowania (dist/ i build/) – generowane przez build_windows.ps1
+# lub GitHub Actions; nie commitować do repozytorium.
+dist/
+build/desktop/
+*.exe
+*.msi
+# Artefakty .NET / MSBuild
+clients/desktop/bin/
+clients/desktop/obj/
+clients/desktop/*.user

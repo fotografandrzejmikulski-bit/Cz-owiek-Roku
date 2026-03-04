@@ -1,0 +1,45 @@
+<!--
+    Człowiek Roku — System Wieloagentowy (Desktop WPF)
+    Plik: clients/desktop/CzlowiekRoku.Desktop.csproj
+    Framework: .NET 8 / WPF
+
+    Budowanie:
+        dotnet build  --configuration Release --runtime win-x64
+        dotnet publish --self-contained true -p:PublishSingleFile=true
+
+    Pełny pipeline (EXE + MSI):
+        .\scripts\build_windows.ps1
+-->
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <UseWPF>true</UseWPF>
+
+    <AssemblyName>CzlowiekRoku.Desktop</AssemblyName>
+    <RootNamespace>CzlowiekRoku.Desktop.MAS</RootNamespace>
+
+    <Version>1.0.0</Version>
+    <FileVersion>1.0.0.0</FileVersion>
+    <AssemblyVersion>1.0.0.0</AssemblyVersion>
+
+    <Company>Człowiek Roku</Company>
+    <Product>Człowiek Roku — System Wieloagentowy</Product>
+    <Description>Klient desktopowy systemu wieloagentowego – 55 555 agentów, przeglądanie dziedzin, czat.</Description>
+    <Copyright>Copyright © 2024 Człowiek Roku</Copyright>
+
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <Deterministic>true</Deterministic>
+    <AllowUnsafeBlocks>false</AllowUnsafeBlocks>
+
+    <!--
+        Konfiguracja pojedynczego pliku EXE (aktywowana przez -p:PublishSingleFile=true).
+        IncludeNativeLibrariesForSelfExtract zapewnia że natywne biblioteki
+        WPF są wbudowane bezpośrednio w plik wykonywalny.
+    -->
+    <IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>
+  </PropertyGroup>
+
+</Project>

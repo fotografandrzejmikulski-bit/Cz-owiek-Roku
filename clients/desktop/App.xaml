@@ -1,0 +1,11 @@
+<!-- Punkt wejścia aplikacji WPF – Człowiek Roku Desktop
+     Plik: clients/desktop/App.xaml
+     Framework: WPF (.NET 8)
+
+     StartupUri jest celowo pominięty – okno główne tworzony jest w App.xaml.cs
+     przy użyciu MasClient skonfigurowanego ze zmiennych środowiskowych. -->
+<Application x:Class="CzlowiekRoku.Desktop.MAS.App"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <Application.Resources/>
+</Application>

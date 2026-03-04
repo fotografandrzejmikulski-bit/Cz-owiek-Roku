@@ -101,12 +101,18 @@ namespace CzlowiekRoku.Desktop.MAS
         private string _researchProgressStatus = string.Empty;
         private bool _isBusy;
         private bool _isResearchMode;
+        private RegistryDomainInfo? _selectedDomain;
+        private RegistryAgentEntry? _selectedRegistryAgent;
+        private string _registryChatInput = string.Empty;
+        private int _domainTotalAgents;
 
         // ── Kolekcje ──────────────────────────────────────────────────────
 
-        public ObservableCollection<ChatMessage>   Messages        { get; } = new();
-        public ObservableCollection<AgentListItem> ActiveAgents    { get; } = new();
-        public ObservableCollection<string>        AllCapabilities { get; } = new();
+        public ObservableCollection<ChatMessage>      Messages        { get; } = new();
+        public ObservableCollection<AgentListItem>    ActiveAgents    { get; } = new();
+        public ObservableCollection<string>           AllCapabilities { get; } = new();
+        public ObservableCollection<RegistryDomainInfo>  Domains      { get; } = new();
+        public ObservableCollection<RegistryAgentEntry>  DomainAgents { get; } = new();
 
         // ── Właściwości bindowane ──────────────────────────────────────────
 
@@ -131,6 +137,45 @@ namespace CzlowiekRoku.Desktop.MAS
         public string NewAgentDescription      { get => _newAgentDescription;      set => SetField(ref _newAgentDescription,      value); }
         public bool   IsBusy                   { get => _isBusy;                   private set => SetField(ref _isBusy,           value); }
 
+        // ── Domain browsing properties ────────────────────────────────────
+
+        /// <summary>Aktualnie wybrana dziedzina z listy Domains.</summary>
+        public RegistryDomainInfo? SelectedDomain
+        {
+            get => _selectedDomain;
+            set
+            {
+                if (SetField(ref _selectedDomain, value) && value != null)
+                    _ = LoadDomainAgentsAsync(value.Domain);
+            }
+        }
+
+        /// <summary>Aktualnie wybrany agent z listy DomainAgents.</summary>
+        public RegistryAgentEntry? SelectedRegistryAgent
+        {
+            get => _selectedRegistryAgent;
+            set
+            {
+                SetField(ref _selectedRegistryAgent, value);
+                if (value != null)
+                    ChatSubtitle = $"Agent: {value.DisplayName} ({value.Domain})";
+            }
+        }
+
+        /// <summary>Tekst wiadomości czatu kierowanej do SelectedRegistryAgent.</summary>
+        public string RegistryChatInput
+        {
+            get => _registryChatInput;
+            set => SetField(ref _registryChatInput, value);
+        }
+
+        /// <summary>Łączna liczba agentów w aktualnie wybranej dziedzinie.</summary>
+        public int DomainTotalAgents
+        {
+            get => _domainTotalAgents;
+            private set => SetField(ref _domainTotalAgents, value);
+        }
+
         /// <summary>True = tryb Deep Research; False = tryb czatu.</summary>
         public bool IsResearchMode
         {
@@ -149,11 +194,13 @@ namespace CzlowiekRoku.Desktop.MAS
 
         // ── Komendy ───────────────────────────────────────────────────────
 
-        public ICommand SendCommand          { get; }
-        public ICommand BuildAgentCommand    { get; }
-        public ICommand SelectAgentCommand   { get; }
-        public ICommand RefreshAgentsCommand { get; }
-        public ICommand ToggleResearchMode   { get; }
+        public ICommand SendCommand             { get; }
+        public ICommand BuildAgentCommand       { get; }
+        public ICommand SelectAgentCommand      { get; }
+        public ICommand RefreshAgentsCommand    { get; }
+        public ICommand ToggleResearchMode      { get; }
+        public ICommand LoadDomainsCommand      { get; }
+        public ICommand RegistryChatCommand     { get; }
 
         // ──────────────────────────────────────────────────────────────────
         // Konstruktor
@@ -183,6 +230,11 @@ namespace CzlowiekRoku.Desktop.MAS
                 OnPropertyChanged(nameof(SendButtonLabel));
                 return Task.CompletedTask;
             });
+            LoadDomainsCommand  = new RelayCommand(LoadDomainsAsync);
+            RegistryChatCommand = new RelayCommand(
+                RegistryChatSendAsync,
+                () => SelectedRegistryAgent != null && !string.IsNullOrWhiteSpace(RegistryChatInput) && !IsBusy
+            );
 
             // Powitalna wiadomosc
             AddMessage(new ChatMessage(
@@ -190,11 +242,13 @@ namespace CzlowiekRoku.Desktop.MAS
                 "Witaj w systemie Czlowiek Roku MAS! Mozesz pisac naturalnym jezkiem – " +
                 "np. 'wygeneruj tresc o walce', 'analiza zachowan gracza' lub " +
                 "wlacz tryb Deep Research i napisz pytanie badawcze. " +
-                "Agenty odpowiedza przez WebSocket.",
+                "Agenty odpowiedza przez WebSocket. " +
+                "Zakładka 'Dziedziny' umozliwia przegladanie 55 555 agentow pogrupowanych w dziedziny.",
                 DateTime.Now, isFromUser: false));
 
-            // Zaladuj liste agentow asynchronicznie
+            // Zaladuj liste agentow i dziedzin asynchronicznie
             _ = RefreshAgentsAsync();
+            _ = LoadDomainsAsync();
         }
 
         // ──────────────────────────────────────────────────────────────────
@@ -414,6 +468,90 @@ namespace CzlowiekRoku.Desktop.MAS
         }
 
         // ──────────────────────────────────────────────────────────────────
+        // Przeglądanie dziedzin (55 555 agentów rejestru)
+        // ──────────────────────────────────────────────────────────────────
+
+        private async Task LoadDomainsAsync()
+        {
+            try
+            {
+                // Ładuj dziedziny strona po stronie (maks. 500 na raz)
+                int offset = 0;
+                const int pageSize = 500;
+                Application.Current.Dispatcher.Invoke(() => Domains.Clear());
+
+                while (true)
+                {
+                    var page = await _masClient.GetDomainsAsync(offset, pageSize);
+                    Application.Current.Dispatcher.Invoke(() =>
+                    {
+                        foreach (var d in page.Domains)
+                            Domains.Add(d);
+                    });
+                    if (offset + pageSize >= page.TotalDomains) break;
+                    offset += pageSize;
+                }
+            }
+            catch { /* siec niedostepna – ignoruj */ }
+        }
+
+        private async Task LoadDomainAgentsAsync(string domain)
+        {
+            try
+            {
+                IsBusy = true;
+                Application.Current.Dispatcher.Invoke(() => DomainAgents.Clear());
+
+                int offset = 0;
+                const int pageSize = 100;
+
+                while (true)
+                {
+                    var page = await _masClient.GetAgentsByDomainAsync(domain, offset, pageSize);
+                    DomainTotalAgents = page.Total;
+                    Application.Current.Dispatcher.Invoke(() =>
+                    {
+                        foreach (var a in page.Agents)
+                            DomainAgents.Add(a);
+                    });
+                    if (offset + pageSize >= page.Total) break;
+                    offset += pageSize;
+                }
+            }
+            catch { /* siec niedostepna – ignoruj */ }
+            finally { IsBusy = false; }
+        }
+
+        private async Task RegistryChatSendAsync()
+        {
+            if (SelectedRegistryAgent == null || string.IsNullOrWhiteSpace(RegistryChatInput))
+                return;
+
+            var agent = SelectedRegistryAgent;
+            var text  = RegistryChatInput.Trim();
+
+            AddMessage(new ChatMessage("Ty", text, DateTime.Now, isFromUser: true));
+            RegistryChatInput = string.Empty;
+            IsBusy = true;
+
+            try
+            {
+                var reply = await _masClient.RegistryChatAsync(agent.AgentId, text);
+                AddMessage(new ChatMessage(
+                    $"{reply.DisplayName} [{reply.Domain}]",
+                    reply.Reply,
+                    DateTime.Now,
+                    isFromUser: false));
+            }
+            catch (Exception ex)
+            {
+                AddMessage(new ChatMessage("System",
+                    $"Blad czatu z agentem: {ex.Message}", DateTime.Now, isFromUser: false));
+            }
+            finally { IsBusy = false; }
+        }
+
+        // ──────────────────────────────────────────────────────────────────
         // Helpers
         // ──────────────────────────────────────────────────────────────────
 
@@ -428,11 +566,12 @@ namespace CzlowiekRoku.Desktop.MAS
 
         public event PropertyChangedEventHandler? PropertyChanged;
 
-        private void SetField<T>(ref T field, T value, [CallerMemberName] string? name = null)
+        private bool SetField<T>(ref T field, T value, [CallerMemberName] string? name = null)
         {
-            if (EqualityComparer<T>.Default.Equals(field, value)) return;
+            if (EqualityComparer<T>.Default.Equals(field, value)) return false;
             field = value;
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
+            return true;
         }
 
         private void OnPropertyChanged(string name)

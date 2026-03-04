@@ -1,0 +1,146 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+    Człowiek Roku Desktop — WiX v4 MSI installer
+    Plik: clients/desktop/installer/Product.wxs
+
+    Wymagania:
+        WiX Toolset v4:  dotnet tool install --global wix
+        UI extension:    wix extension add WixToolset.UI.wixext --global
+
+    Budowanie (po dotnet publish do katalogu publish/):
+        wix build Product.wxs                           \
+            -ext WixToolset.UI.wixext                   \
+            -d PublishDir=..\publish\                   \
+            -d Version=1.0.0                            \
+            -o CzlowiekRoku-v1.0.0-setup.msi
+
+    W ramach pełnego pipeline'u użyj:
+        .\scripts\build_windows.ps1
+-->
+<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs"
+     xmlns:ui="http://wixtoolset.org/schemas/v4/wxs/ui">
+
+  <Package Name="Człowiek Roku — System Wieloagentowy"
+           Manufacturer="Człowiek Roku"
+           Version="$(var.Version)"
+           UpgradeCode="A1B2C3D4-E5F6-4A7B-8C9D-0E1F2A3B4C5E"
+           Scope="perMachine"
+           Compressed="yes">
+
+    <SummaryInformation Description="Człowiek Roku — Instalator systemu wieloagentowego (55 555 agentów)" />
+
+    <!-- Aktualizacja poprzednich wersji bez pytania użytkownika -->
+    <MajorUpgrade DowngradeErrorMessage="Nowsza wersja aplikacji jest już zainstalowana.
+Odinstaluj ją przed ponowną instalacją." />
+
+    <MediaTemplate EmbedCab="yes" />
+
+    <!-- ── Dialog sekwencji instalacji ── -->
+    <ui:WixUI Id="WixUI_InstallDir" />
+    <Property Id="WIXUI_INSTALLDIR" Value="INSTALLDIR" />
+
+    <!-- ── Zmienne środowiskowe (opcjonalne domyślne wartości URL backendu) ── -->
+    <Property Id="MASAPI_URL"     Value="http://localhost:8000" />
+    <Property Id="MASAPI_BACKEND" Value="mock" />
+
+    <!-- ── Struktura katalogów ── -->
+    <StandardDirectory Id="ProgramFiles64Folder">
+      <Directory Id="CompanyDir" Name="CzlowiekRoku">
+        <Directory Id="INSTALLDIR" Name="Człowiek Roku Desktop" />
+      </Directory>
+    </StandardDirectory>
+
+    <StandardDirectory Id="ProgramMenuFolder">
+      <Directory Id="ProgramMenuDir" Name="Człowiek Roku" />
+    </StandardDirectory>
+
+    <StandardDirectory Id="DesktopFolder" />
+
+    <!-- ── Funkcje instalacji ── -->
+    <Feature Id="ProductFeature"
+             Title="Człowiek Roku Desktop"
+             Description="Klient desktopowy systemu wieloagentowego (55 555 agentów)"
+             Level="1">
+      <ComponentGroupRef Id="AppComponents" />
+      <ComponentGroupRef Id="ShortcutComponents" />
+      <ComponentGroupRef Id="EnvVarComponents" />
+    </Feature>
+
+    <!-- ── Pliki aplikacji ── -->
+    <ComponentGroup Id="AppComponents" Directory="INSTALLDIR">
+
+      <!-- Główny plik wykonywalny -->
+      <Component Id="MainExe"
+                 Guid="B1C2D3E4-F5A6-4B7C-8D9E-0F1A2B3C4D5E">
+        <File Id="MainExeFile"
+              Source="$(var.PublishDir)CzlowiekRoku.Desktop.exe"
+              KeyPath="yes" />
+      </Component>
+
+    </ComponentGroup>
+
+    <!-- ── Skróty ── -->
+    <ComponentGroup Id="ShortcutComponents">
+
+      <Component Id="StartMenuShortcut"
+                 Guid="C1D2E3F4-A5B6-4C7D-8E9F-0A1B2C3D4E5F"
+                 Directory="ProgramMenuDir">
+        <Shortcut Id="StartMenuShortcutItem"
+                  Name="Człowiek Roku"
+                  Target="[INSTALLDIR]CzlowiekRoku.Desktop.exe"
+                  WorkingDirectory="INSTALLDIR"
+                  Description="Człowiek Roku — System Wieloagentowy (55 555 agentów)" />
+        <RemoveFolder Id="RemoveProgramMenuDir"
+                      Directory="ProgramMenuDir"
+                      On="uninstall" />
+        <RegistryValue Root="HKCU"
+                       Key="Software\CzlowiekRoku\Desktop"
+                       Name="Installed"
+                       Type="integer"
+                       Value="1"
+                       KeyPath="yes" />
+      </Component>
+
+      <Component Id="DesktopShortcut"
+                 Guid="D1E2F3A4-B5C6-4D7E-8F9A-0B1C2D3E4F5A"
+                 Directory="DesktopFolder">
+        <Shortcut Id="DesktopShortcutItem"
+                  Name="Człowiek Roku"
+                  Target="[INSTALLDIR]CzlowiekRoku.Desktop.exe"
+                  WorkingDirectory="INSTALLDIR"
+                  Description="Człowiek Roku — System Wieloagentowy" />
+        <RemoveFolder Id="RemoveDesktopFolder"
+                      Directory="DesktopFolder"
+                      On="uninstall" />
+        <RegistryValue Root="HKCU"
+                       Key="Software\CzlowiekRoku\Desktop"
+                       Name="DesktopShortcut"
+                       Type="integer"
+                       Value="1"
+                       KeyPath="yes" />
+      </Component>
+
+    </ComponentGroup>
+
+    <!-- ── Zmienne środowiskowe ustawiane podczas instalacji ── -->
+    <ComponentGroup Id="EnvVarComponents" Directory="INSTALLDIR">
+      <Component Id="EnvVarComp"
+                 Guid="E1F2A3B4-C5D6-4E7F-8A9B-0C1D2E3F4A5B">
+        <Environment Id="EnvMasApiUrl"
+                     Action="set"
+                     Name="MASAPI_URL"
+                     Value="[MASAPI_URL]"
+                     Part="all"
+                     System="yes"
+                     Permanent="no" />
+        <RegistryValue Root="HKCU"
+                       Key="Software\CzlowiekRoku\Desktop"
+                       Name="EnvVarInstalled"
+                       Type="integer"
+                       Value="1"
+                       KeyPath="yes" />
+      </Component>
+    </ComponentGroup>
+
+  </Package>
+</Wix>

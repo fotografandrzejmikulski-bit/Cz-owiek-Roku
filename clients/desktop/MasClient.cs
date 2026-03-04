@@ -74,6 +74,52 @@ namespace CzlowiekRoku.Desktop.MAS
         string Query
     );
 
+    // ─── Registry Domain Browsing (GET /api/v1/registry/domains/*) ────────
+
+    public record RegistryDomainInfo(string Domain, int AgentCount);
+
+    public record RegistryDomainsPage(
+        int TotalDomains,
+        int TotalAgents,
+        int Offset,
+        int Limit,
+        List<RegistryDomainInfo> Domains
+    );
+
+    public record RegistryAgentEntry(
+        string AgentId,
+        string DisplayName,
+        string Domain,
+        string Role,
+        string Specialization,
+        string Category,
+        string Safety,
+        string Mission
+    );
+
+    public record RegistryDomainAgentsPage(
+        string Domain,
+        int Total,
+        int Offset,
+        int Limit,
+        List<RegistryAgentEntry> Agents
+    );
+
+    // ─── Registry Chat (POST /api/v1/registry/chat) ───────────────────────
+
+    public record RegistryChatRequest(string AgentId, string Message, string ClientId = "user");
+
+    public record RegistryChatReply(
+        string AgentId,
+        string DisplayName,
+        string Domain,
+        string Role,
+        string Specialization,
+        string Category,
+        string Safety,
+        string Reply
+    );
+
     // ──────────────────────────────────────────────────────────────────────
     // Interfejs klienta MAS (zasada Dependency Inversion – SOLID)
     // ──────────────────────────────────────────────────────────────────────
@@ -90,6 +136,11 @@ namespace CzlowiekRoku.Desktop.MAS
             string name, string role, List<string> capabilities, string description = "");
         Task<ResearchResponse> StartResearchAsync(
             string query, int maxIterations = 3, int reflectionThreshold = 75);
+
+        // ─── Registry: domain browsing + agent chat ────────────────────
+        Task<RegistryDomainsPage> GetDomainsAsync(int offset = 0, int limit = 100);
+        Task<RegistryDomainAgentsPage> GetAgentsByDomainAsync(string domain, int offset = 0, int limit = 50);
+        Task<RegistryChatReply> RegistryChatAsync(string agentId, string message);
     }
 
     // ──────────────────────────────────────────────────────────────────────
@@ -234,6 +285,38 @@ namespace CzlowiekRoku.Desktop.MAS
             var body = await response.Content.ReadAsStringAsync();
             return JsonSerializer.Deserialize<ResearchResponse>(body, JsonOptions)
                    ?? throw new InvalidOperationException("Pusta odpowiedź badania");
+        }
+
+        // ─── Registry: domain browsing ────────────────────────────────────
+
+        public async Task<RegistryDomainsPage> GetDomainsAsync(int offset = 0, int limit = 100)
+        {
+            var body = await _httpClient.GetStringAsync(
+                $"/api/v1/registry/domains?offset={offset}&limit={limit}");
+            return JsonSerializer.Deserialize<RegistryDomainsPage>(body, JsonOptions)
+                   ?? throw new InvalidOperationException("Pusta odpowiedź: lista domen");
+        }
+
+        public async Task<RegistryDomainAgentsPage> GetAgentsByDomainAsync(
+            string domain, int offset = 0, int limit = 50)
+        {
+            var encodedDomain = Uri.EscapeDataString(domain);
+            var body = await _httpClient.GetStringAsync(
+                $"/api/v1/registry/domains/{encodedDomain}?offset={offset}&limit={limit}");
+            return JsonSerializer.Deserialize<RegistryDomainAgentsPage>(body, JsonOptions)
+                   ?? throw new InvalidOperationException("Pusta odpowiedź: agenci dziedziny");
+        }
+
+        public async Task<RegistryChatReply> RegistryChatAsync(string agentId, string message)
+        {
+            var request = new RegistryChatRequest(agentId, message, _clientId);
+            var json = JsonSerializer.Serialize(request, JsonOptions);
+            using var content = new StringContent(json, Encoding.UTF8, "application/json");
+            var response = await _httpClient.PostAsync("/api/v1/registry/chat", content);
+            response.EnsureSuccessStatusCode();
+            var body = await response.Content.ReadAsStringAsync();
+            return JsonSerializer.Deserialize<RegistryChatReply>(body, JsonOptions)
+                   ?? throw new InvalidOperationException("Pusta odpowiedź czatu rejestru");
         }
 
         public void Dispose()
