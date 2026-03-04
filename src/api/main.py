@@ -37,6 +37,7 @@ from src.api.routers import (
     edu_router,
     exotic_router,
     pcg_router,
+    registry_router,
     research_router,
     specialist_router,
     tasks_router,
@@ -161,6 +162,7 @@ app.include_router(specialist_router, prefix="/api/v1")
 app.include_router(pcg_router, prefix="/api/v1")
 app.include_router(youth_router, prefix="/api/v1")
 app.include_router(exotic_router, prefix="/api/v1")
+app.include_router(registry_router, prefix="/api/v1")
 
 
 # ---------------------------------------------------------------------------

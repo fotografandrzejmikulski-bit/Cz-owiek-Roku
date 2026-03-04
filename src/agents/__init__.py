@@ -43,6 +43,12 @@ from .youth_agents import (
     create_all_youth_agents,
     ALL_YOUTH_AGENT_CLASSES,
 )
+from .agent_registry import (
+    AgentRegistryEntry,
+    AgentRegistry,
+    DynamicRegistryAgent,
+    get_default_registry,
+)
 from .cross_agent_protocol import (
     CrossAgentBus,
     SafetyCoordinator,
@@ -118,6 +124,11 @@ __all__ = [
     "CoachRelacjiAI",
     "create_all_youth_agents",
     "ALL_YOUTH_AGENT_CLASSES",
+    # 6666-Agent Registry
+    "AgentRegistryEntry",
+    "AgentRegistry",
+    "DynamicRegistryAgent",
+    "get_default_registry",
     # Cross-Agent Protocol
     "CrossAgentBus",
     "SafetyCoordinator",

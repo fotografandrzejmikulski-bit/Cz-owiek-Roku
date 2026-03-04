@@ -758,3 +758,130 @@ async def exotic_session(
         response=result.get("response", ""),
         status=result.get("status", "ok"),
     )
+
+
+# ===========================================================================
+# Router: Agent Registry (6666 unikalnych agentów)
+# ===========================================================================
+
+class RegistrySessionRequest(BaseModel):
+    """Żądanie sesji z agentem z rejestru 6666."""
+    agent_id: str = Field(..., description="ID agenta z rejestru (np. 'agent_0001')")
+    task: str = Field(..., min_length=1, max_length=2000,
+                      description="Zapytanie / zadanie dla agenta")
+
+
+class RegistrySessionResponse(BaseModel):
+    """Odpowiedź agenta z rejestru."""
+    agent_id:       str
+    display_name:   str
+    category:       str
+    safety:         str
+    domain:         str
+    role:           str
+    specialization: str
+    response:       str
+    status:         str = "ok"
+
+
+registry_router = APIRouter(prefix="/registry", tags=["registry"])
+
+
+@registry_router.get("/agents", tags=["registry"])
+async def list_registry_agents(
+    offset: int = 0,
+    limit: int = 100,
+) -> dict[str, Any]:
+    """
+    Zwraca stronicowaną listę agentów z rejestru 6666.
+
+    Parametry:
+        offset: pozycja startowa (domyślnie 0)
+        limit:  liczba wyników (domyślnie 100, maks. 500)
+    """
+    from src.agents.agent_registry import get_default_registry
+    registry = get_default_registry()
+    limit = min(limit, 500)
+    entries = registry.page(offset=offset, limit=limit)
+    return {
+        "total":   registry.count(),
+        "offset":  offset,
+        "limit":   limit,
+        "agents":  [e.to_dict() for e in entries],
+    }
+
+
+@registry_router.get("/agents/search", tags=["registry"])
+async def search_registry_agents(
+    q: str,
+    limit: int = 50,
+) -> dict[str, Any]:
+    """
+    Wyszukuje agentów po frazie (display_name, domain, role, specialization).
+    """
+    from src.agents.agent_registry import get_default_registry
+    registry = get_default_registry()
+    limit = min(limit, 500)
+    entries = registry.search(q, limit=limit)
+    return {
+        "query":   q,
+        "count":   len(entries),
+        "agents":  [e.to_dict() for e in entries],
+    }
+
+
+@registry_router.get("/agents/{agent_id}", tags=["registry"])
+async def get_registry_agent(agent_id: str) -> dict[str, Any]:
+    """
+    Zwraca szczegóły agenta po jego ID.
+    """
+    from src.agents.agent_registry import get_default_registry
+    registry = get_default_registry()
+    entry = registry.get(agent_id)
+    if entry is None:
+        raise HTTPException(
+            status_code=404,
+            detail=f"Agent '{agent_id}' nie istnieje w rejestrze.",
+        )
+    return entry.to_dict()
+
+
+@registry_router.post("/session", response_model=RegistrySessionResponse)
+async def registry_session(
+    req: RegistrySessionRequest, request: Request
+) -> RegistrySessionResponse:
+    """
+    Uruchamia sesję z wybranym agentem z rejestru 6666.
+    """
+    from src.agents.agent_registry import get_default_registry, DynamicRegistryAgent
+    registry = get_default_registry()
+    entry = registry.get(req.agent_id)
+    if entry is None:
+        raise HTTPException(
+            status_code=404,
+            detail=f"Agent '{req.agent_id}' nie istnieje w rejestrze.",
+        )
+
+    broker = getattr(request.app.state, "broker", None)
+    if broker is None:
+        raise HTTPException(status_code=503, detail="Broker niedostępny.")
+
+    agent = DynamicRegistryAgent(entry=entry, broker=broker)
+    message = AgentMessage(
+        type=MessageType.TASK_REQUEST,
+        sender_id="api",
+        receiver_id=req.agent_id,
+        payload={"task": req.task},
+    )
+    result = await agent.process_task(message)
+
+    return RegistrySessionResponse(
+        agent_id      = result.get("agent_id", req.agent_id),
+        display_name  = result.get("display_name", ""),
+        category      = result.get("category", ""),
+        safety        = result.get("safety", "safe"),
+        domain        = result.get("domain", ""),
+        role          = result.get("role", ""),
+        specialization= result.get("specialization", ""),
+        response      = result.get("response", ""),
+    )
