@@ -121,7 +121,7 @@ class McpServer:
 
     Ekspozycja:
       Tools:
-        - list_agents       : lista agentów z rejestru 51 110
+        - list_agents       : lista agentów z rejestru 55 555
         - search_agents     : wyszukiwanie agentów
         - get_agent         : szczegóły agenta
         - list_historical   : lista historycznych agentów AI
@@ -154,7 +154,7 @@ class McpServer:
         self._tools = [
             McpTool(
                 name="list_agents",
-                description="Zwraca stronicowaną listę agentów z rejestru 51 110.",
+                description="Zwraca stronicowaną listę agentów z rejestru 55 555.",
                 input_schema={
                     "type": "object",
                     "properties": {
@@ -226,7 +226,7 @@ class McpServer:
             McpResource(
                 uri="czlowiek-roku://agents",
                 name="Agent Registry",
-                description="Pełny rejestr 51 110 unikalnych agentów.",
+                description="Pełny rejestr 55 555 unikalnych agentów.",
             ),
             McpResource(
                 uri="czlowiek-roku://historical",

@@ -1,14 +1,15 @@
 """
-Rejestr 51 110 unikalnych agentów z wszelkich dziedzin świata.
+Rejestr 55 555 unikalnych agentów z wszelkich dziedzin świata.
 
 AgentRegistryEntry  – immutable dataclass opisujący jednego agenta
 AgentRegistry       – singleton ładujący rejestr z data/agent_registry.json
 DynamicRegistryAgent – instancja agenta zdolna do przetwarzania zadań
 
-Rejestr pokrywa 878 domen: nauki przyrodnicze, inżynieryjne, medyczne,
+Rejestr pokrywa 1300+ domen: nauki przyrodnicze, inżynieryjne, medyczne,
 społeczne, humanistyka, sztuka, technologia, prawo, sport, kosmos, energia,
 gastronomia, moda, media, zdrowie, filozofia, religia, obronność, transport,
-budownictwo, psychologia, nowe technologie, klimat i wiele innych.
+budownictwo, psychologia, nowe technologie, klimat, programowanie, gry AAA,
+gry indie, komiksy, książki, ebooki, aplikacje mobilne i wiele innych.
 """
 from __future__ import annotations
 

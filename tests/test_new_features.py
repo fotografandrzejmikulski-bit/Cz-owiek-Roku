@@ -510,7 +510,7 @@ class TestMcpServer:
             "params": {"name": "list_agents", "arguments": {"limit": 5}},
         })
         content = json.loads(resp["result"]["content"][0]["text"])
-        assert content["total"] == 51110
+        assert content["total"] == 55555
         assert len(content["agents"]) == 5
 
     @pytest.mark.asyncio
@@ -542,7 +542,7 @@ class TestMcpServer:
             "params": {"name": "get_server_info", "arguments": {}},
         })
         content = json.loads(resp["result"]["content"][0]["text"])
-        assert content["registry_size"] == 51110
+        assert content["registry_size"] == 55555
 
     @pytest.mark.asyncio
     async def test_resources_list(self, mcp_server: McpServer) -> None:
@@ -562,7 +562,7 @@ class TestMcpServer:
             "params": {"uri": "czlowiek-roku://agents"},
         })
         content = json.loads(resp["result"]["contents"][0]["text"])
-        assert content["total"] == 51110
+        assert content["total"] == 55555
 
     @pytest.mark.asyncio
     async def test_prompts_list(self, mcp_server: McpServer) -> None:
