@@ -388,8 +388,10 @@ class TestGoogleAuthService:
         assert service.is_configured is False
 
     def test_get_authorization_url(self, auth_service: GoogleAuthService) -> None:
+        from urllib.parse import urlparse
         url = auth_service.get_authorization_url(state="test123")
-        assert "accounts.google.com" in url
+        parsed = urlparse(url)
+        assert parsed.netloc == "accounts.google.com"
         assert "test-client-id" in url
         assert "test123" in url
 
