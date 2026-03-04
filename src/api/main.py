@@ -27,6 +27,7 @@ from src.agents import (
     create_all_edu_agents,
     create_all_specialist_agents,
     create_all_youth_agents,
+    create_all_exotic_agents,
     CrossAgentBus,
     SafetyCoordinator,
 )
@@ -34,6 +35,7 @@ from src.api.routers import (
     agents_router,
     chat_router,
     edu_router,
+    exotic_router,
     pcg_router,
     research_router,
     specialist_router,
@@ -82,6 +84,10 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     youth_agents_list = create_all_youth_agents(broker=broker, bus=cross_agent_bus)
     youth_agents_dict = {a.agent_id: a for a in youth_agents_list}
 
+    # Exotic / Niche agents (Kompendium Anomalii Agentowych) – 18 agents
+    exotic_agents_list = create_all_exotic_agents(broker=broker)
+    exotic_agents_dict = {a.agent_id: a for a in exotic_agents_list}
+
     for agent in (content_agent, narrative_agent, analytics_agent):
         orchestrator.register_agent(agent.agent_id, agent.get_capabilities())
     # Register DeepResearchOrchestrator directly (not through main orchestrator pipeline)
@@ -95,6 +101,7 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
         *edu_agents_list,
         *specialist_agents_list,
         *youth_agents_list,
+        *exotic_agents_list,
     ]
     for agent in agents_to_start:
         task = asyncio.create_task(agent.start())
@@ -107,13 +114,15 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     app.state.specialist_agents = specialist_agents_dict
     app.state.youth_agents = youth_agents_dict
     app.state.safety_coordinator = safety_coordinator
+    app.state.exotic_agents = exotic_agents_dict
 
     logger.info(
-        "System MAS uruchomiony z %d agentami (%d edu, %d specialist, %d youth).",
+        "System MAS uruchomiony z %d agentami (%d edu, %d specialist, %d youth, %d exotic).",
         len(agents_to_start),
         len(edu_agents_list),
         len(specialist_agents_list),
         len(youth_agents_list),
+        len(exotic_agents_list),
     )
     yield
 
@@ -151,6 +160,7 @@ app.include_router(edu_router, prefix="/api/v1")
 app.include_router(specialist_router, prefix="/api/v1")
 app.include_router(pcg_router, prefix="/api/v1")
 app.include_router(youth_router, prefix="/api/v1")
+app.include_router(exotic_router, prefix="/api/v1")
 
 
 # ---------------------------------------------------------------------------

@@ -682,3 +682,79 @@ async def parent_safety_dashboard(request: Request) -> dict[str, Any]:
     if coordinator is None:
         return {"total_alerts": 0, "critical_alerts": 0, "recent_alerts": []}
     return coordinator.get_parent_dashboard()
+
+
+# ===========================================================================
+# Router: Exotic / Niche Agents (Kompendium Anomalii Agentowych)
+# ===========================================================================
+
+class ExoticSessionRequest(BaseModel):
+    """Żądanie sesji z egzotycznym agentem."""
+    agent_id: str = Field(..., description="ID agenta egzotycznego")
+    task: str = Field(..., min_length=1, max_length=2000,
+                      description="Zapytanie / zadanie dla agenta")
+
+
+class ExoticSessionResponse(BaseModel):
+    """Odpowiedź agenta egzotycznego."""
+    session_id:   str
+    agent_id:     str
+    display_name: str
+    category:     str
+    safety:       str
+    response:     str
+    status:       str = "ok"
+
+
+exotic_router = APIRouter(prefix="/exotic", tags=["exotic"])
+
+
+@exotic_router.get("/agents", tags=["exotic"])
+async def list_exotic_agents(request: Request) -> list[dict[str, Any]]:
+    """
+    Zwraca listę wszystkich agentów egzotycznych (§1–§7 Kompendium).
+    """
+    exotic_agents = getattr(request.app.state, "exotic_agents", {})
+    return [a.get_info() for a in exotic_agents.values()]
+
+
+@exotic_router.post("/session", response_model=ExoticSessionResponse)
+async def exotic_session(
+    req: ExoticSessionRequest, request: Request
+) -> ExoticSessionResponse:
+    """
+    Uruchamia sesję z wybranym agentem egzotycznym.
+
+    Agenty z safety=sandboxed (ChaosGPT, Tay, Alice&Bob) działają wyłącznie
+    w trybie analitycznym – nie generują szkodliwych treści.
+    """
+    exotic_agents = getattr(request.app.state, "exotic_agents", {})
+    agent = exotic_agents.get(req.agent_id)
+    if agent is None:
+        available = list(exotic_agents.keys())
+        raise HTTPException(
+            status_code=404,
+            detail={
+                "error": f"Agent egzotyczny '{req.agent_id}' nie istnieje.",
+                "available": available,
+            },
+        )
+
+    message = AgentMessage(
+        type=MessageType.TASK_REQUEST,
+        sender_id="api",
+        receiver_id=req.agent_id,
+        payload={"task": req.task},
+    )
+
+    result = await agent.process_task(message)
+
+    return ExoticSessionResponse(
+        session_id=result.get("session", {}).get("session_id", message.message_id),
+        agent_id=result.get("agent_id", req.agent_id),
+        display_name=result.get("display_name", ""),
+        category=result.get("category", ""),
+        safety=result.get("safety", "safe"),
+        response=result.get("response", ""),
+        status=result.get("status", "ok"),
+    )
