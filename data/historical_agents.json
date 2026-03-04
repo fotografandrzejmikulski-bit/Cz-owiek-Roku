@@ -1,0 +1,1361 @@
+[
+  {
+    "id": "gpt-1",
+    "name": "GPT-1",
+    "org": "OpenAI",
+    "year": 2018,
+    "type": "LLM",
+    "description": "First GPT – 117M params, BooksCorpus, generative pre-training.",
+    "open_source": false
+  },
+  {
+    "id": "gpt-2",
+    "name": "GPT-2",
+    "org": "OpenAI",
+    "year": 2019,
+    "type": "LLM",
+    "description": "1.5B params; initially withheld due to misuse concerns.",
+    "open_source": true
+  },
+  {
+    "id": "gpt-3",
+    "name": "GPT-3",
+    "org": "OpenAI",
+    "year": 2020,
+    "type": "LLM",
+    "description": "175B params; few-shot learning, davinci series.",
+    "open_source": false
+  },
+  {
+    "id": "gpt-3.5-turbo",
+    "name": "GPT-3.5 Turbo",
+    "org": "OpenAI",
+    "year": 2022,
+    "type": "LLM",
+    "description": "ChatGPT backbone; RLHF fine-tuned. 100B+ params.",
+    "open_source": false
+  },
+  {
+    "id": "gpt-4",
+    "name": "GPT-4",
+    "org": "OpenAI",
+    "year": 2023,
+    "type": "LLM",
+    "description": "Multimodal GPT-4; top MMLU, bar exam performance.",
+    "open_source": false
+  },
+  {
+    "id": "gpt-4o",
+    "name": "GPT-4o",
+    "org": "OpenAI",
+    "year": 2024,
+    "type": "LLM",
+    "description": "Omni GPT-4 – native audio/vision/text.",
+    "open_source": false
+  },
+  {
+    "id": "gpt-4o-mini",
+    "name": "GPT-4o Mini",
+    "org": "OpenAI",
+    "year": 2024,
+    "type": "LLM",
+    "description": "Smaller, faster, cheaper GPT-4o variant.",
+    "open_source": false
+  },
+  {
+    "id": "o1-preview",
+    "name": "OpenAI o1",
+    "org": "OpenAI",
+    "year": 2024,
+    "type": "LLM",
+    "description": "Chain-of-thought reasoning model (Project Strawberry).",
+    "open_source": false
+  },
+  {
+    "id": "o3",
+    "name": "OpenAI o3",
+    "org": "OpenAI",
+    "year": 2025,
+    "type": "LLM",
+    "description": "Advanced reasoning; top ARC-AGI performance.",
+    "open_source": false
+  },
+  {
+    "id": "claude-1",
+    "name": "Claude 1",
+    "org": "Anthropic",
+    "year": 2023,
+    "type": "LLM",
+    "description": "Constitutional AI; harmless/honest/helpful.",
+    "open_source": false
+  },
+  {
+    "id": "claude-2",
+    "name": "Claude 2",
+    "org": "Anthropic",
+    "year": 2023,
+    "type": "LLM",
+    "description": "200K context window; improved coding.",
+    "open_source": false
+  },
+  {
+    "id": "claude-3-haiku",
+    "name": "Claude 3 Haiku",
+    "org": "Anthropic",
+    "year": 2024,
+    "type": "LLM",
+    "description": "Fastest Claude 3; edge-deployment ready.",
+    "open_source": false
+  },
+  {
+    "id": "claude-3-sonnet",
+    "name": "Claude 3 Sonnet",
+    "org": "Anthropic",
+    "year": 2024,
+    "type": "LLM",
+    "description": "Balanced speed/quality Claude 3 variant.",
+    "open_source": false
+  },
+  {
+    "id": "claude-3-opus",
+    "name": "Claude 3 Opus",
+    "org": "Anthropic",
+    "year": 2024,
+    "type": "LLM",
+    "description": "Most capable Claude 3; research-grade reasoning.",
+    "open_source": false
+  },
+  {
+    "id": "claude-3.5-sonnet",
+    "name": "Claude 3.5 Sonnet",
+    "org": "Anthropic",
+    "year": 2024,
+    "type": "LLM",
+    "description": "Surpasses Opus on benchmarks; artifacts feature.",
+    "open_source": false
+  },
+  {
+    "id": "claude-3.7-sonnet",
+    "name": "Claude 3.7 Sonnet",
+    "org": "Anthropic",
+    "year": 2025,
+    "type": "LLM",
+    "description": "Extended thinking mode; hybrid reasoning.",
+    "open_source": false
+  },
+  {
+    "id": "gemini-1.0-pro",
+    "name": "Gemini 1.0 Pro",
+    "org": "Google DeepMind",
+    "year": 2023,
+    "type": "LLM",
+    "description": "Multimodal Gemini; replaces PaLM 2.",
+    "open_source": false
+  },
+  {
+    "id": "gemini-1.5-pro",
+    "name": "Gemini 1.5 Pro",
+    "org": "Google DeepMind",
+    "year": 2024,
+    "type": "LLM",
+    "description": "1M token context; MoE architecture.",
+    "open_source": false
+  },
+  {
+    "id": "gemini-1.5-flash",
+    "name": "Gemini 1.5 Flash",
+    "org": "Google DeepMind",
+    "year": 2024,
+    "type": "LLM",
+    "description": "Distilled Gemini 1.5 Pro for fast inference.",
+    "open_source": false
+  },
+  {
+    "id": "gemini-2.0-flash",
+    "name": "Gemini 2.0 Flash",
+    "org": "Google DeepMind",
+    "year": 2024,
+    "type": "LLM",
+    "description": "Native tool use, agentic capabilities.",
+    "open_source": false
+  },
+  {
+    "id": "gemini-2.5-pro",
+    "name": "Gemini 2.5 Pro",
+    "org": "Google DeepMind",
+    "year": 2025,
+    "type": "LLM",
+    "description": "Top reasoning performance; thinking mode.",
+    "open_source": false
+  },
+  {
+    "id": "palm",
+    "name": "PaLM",
+    "org": "Google",
+    "year": 2022,
+    "type": "LLM",
+    "description": "540B Pathways LM; BIG-Bench tasks.",
+    "open_source": false
+  },
+  {
+    "id": "palm-2",
+    "name": "PaLM 2",
+    "org": "Google",
+    "year": 2023,
+    "type": "LLM",
+    "description": "Improved PaLM; powers Bard/Gemini Pro.",
+    "open_source": false
+  },
+  {
+    "id": "llama-1",
+    "name": "LLaMA 1",
+    "org": "Meta AI",
+    "year": 2023,
+    "type": "LLM",
+    "description": "7B–65B open weights; sparked OSS LLM revolution.",
+    "open_source": true
+  },
+  {
+    "id": "llama-2",
+    "name": "LLaMA 2",
+    "org": "Meta AI",
+    "year": 2023,
+    "type": "LLM",
+    "description": "7B–70B; chat fine-tune; permissive license.",
+    "open_source": true
+  },
+  {
+    "id": "llama-3",
+    "name": "LLaMA 3",
+    "org": "Meta AI",
+    "year": 2024,
+    "type": "LLM",
+    "description": "8B–70B; improved tokenizer; 128K context.",
+    "open_source": true
+  },
+  {
+    "id": "llama-3.1",
+    "name": "LLaMA 3.1",
+    "org": "Meta AI",
+    "year": 2024,
+    "type": "LLM",
+    "description": "Up to 405B; tool use; multilinguality.",
+    "open_source": true
+  },
+  {
+    "id": "llama-3.3",
+    "name": "LLaMA 3.3",
+    "org": "Meta AI",
+    "year": 2024,
+    "type": "LLM",
+    "description": "70B instruction model; top OSS performance.",
+    "open_source": true
+  },
+  {
+    "id": "mistral-7b",
+    "name": "Mistral 7B",
+    "org": "Mistral AI",
+    "year": 2023,
+    "type": "LLM",
+    "description": "Sliding window attention; beats LLaMA 2 13B.",
+    "open_source": true
+  },
+  {
+    "id": "mixtral-8x7b",
+    "name": "Mixtral 8×7B",
+    "org": "Mistral AI",
+    "year": 2023,
+    "type": "LLM",
+    "description": "MoE; 46.7B total, 12.9B active; Apache 2.0.",
+    "open_source": true
+  },
+  {
+    "id": "mixtral-8x22b",
+    "name": "Mixtral 8×22B",
+    "org": "Mistral AI",
+    "year": 2024,
+    "type": "LLM",
+    "description": "141B total; best-in-class OSS reasoning.",
+    "open_source": true
+  },
+  {
+    "id": "mistral-large",
+    "name": "Mistral Large",
+    "org": "Mistral AI",
+    "year": 2024,
+    "type": "LLM",
+    "description": "Frontier proprietary model; multilingual.",
+    "open_source": false
+  },
+  {
+    "id": "mistral-nemo",
+    "name": "Mistral NeMo",
+    "org": "Mistral AI",
+    "year": 2024,
+    "type": "LLM",
+    "description": "12B with Tekken tokenizer; MIT license.",
+    "open_source": true
+  },
+  {
+    "id": "falcon-7b",
+    "name": "Falcon 7B",
+    "org": "TII",
+    "year": 2023,
+    "type": "LLM",
+    "description": "Apache 2.0; refined web data.",
+    "open_source": true
+  },
+  {
+    "id": "falcon-40b",
+    "name": "Falcon 40B",
+    "org": "TII",
+    "year": 2023,
+    "type": "LLM",
+    "description": "SOTA OSS at launch; multiquery attention.",
+    "open_source": true
+  },
+  {
+    "id": "falcon-180b",
+    "name": "Falcon 180B",
+    "org": "TII",
+    "year": 2023,
+    "type": "LLM",
+    "description": "Largest Falcon; trained on 3.5T tokens.",
+    "open_source": true
+  },
+  {
+    "id": "phi-1",
+    "name": "Phi-1",
+    "org": "Microsoft",
+    "year": 2023,
+    "type": "LLM",
+    "description": "1.3B SLM; textbook-quality code data.",
+    "open_source": true
+  },
+  {
+    "id": "phi-2",
+    "name": "Phi-2",
+    "org": "Microsoft",
+    "year": 2023,
+    "type": "LLM",
+    "description": "2.7B; outperforms many 7B models.",
+    "open_source": true
+  },
+  {
+    "id": "phi-3-mini",
+    "name": "Phi-3 Mini",
+    "org": "Microsoft",
+    "year": 2024,
+    "type": "LLM",
+    "description": "3.8B; phone-deployable; strong reasoning.",
+    "open_source": true
+  },
+  {
+    "id": "phi-3.5",
+    "name": "Phi-3.5",
+    "org": "Microsoft",
+    "year": 2024,
+    "type": "LLM",
+    "description": "MoE + mini + vision variants.",
+    "open_source": true
+  },
+  {
+    "id": "phi-4",
+    "name": "Phi-4",
+    "org": "Microsoft",
+    "year": 2024,
+    "type": "LLM",
+    "description": "14B; synthetic data focus; top math.",
+    "open_source": true
+  },
+  {
+    "id": "gemma-2b",
+    "name": "Gemma 2B",
+    "org": "Google",
+    "year": 2024,
+    "type": "LLM",
+    "description": "Open Gemini-family SLM.",
+    "open_source": true
+  },
+  {
+    "id": "gemma-7b",
+    "name": "Gemma 7B",
+    "org": "Google",
+    "year": 2024,
+    "type": "LLM",
+    "description": "Open Gemini-family 7B.",
+    "open_source": true
+  },
+  {
+    "id": "gemma-2",
+    "name": "Gemma 2",
+    "org": "Google",
+    "year": 2024,
+    "type": "LLM",
+    "description": "9B/27B improved Gemma; knowledge distillation.",
+    "open_source": true
+  },
+  {
+    "id": "gemma-3",
+    "name": "Gemma 3",
+    "org": "Google",
+    "year": 2025,
+    "type": "LLM",
+    "description": "Multimodal; 1B–27B; 128K context.",
+    "open_source": true
+  },
+  {
+    "id": "qwen-1.5",
+    "name": "Qwen 1.5",
+    "org": "Alibaba",
+    "year": 2024,
+    "type": "LLM",
+    "description": "Multilingual; 0.5B–110B; Apache 2.0.",
+    "open_source": true
+  },
+  {
+    "id": "qwen-2",
+    "name": "Qwen 2",
+    "org": "Alibaba",
+    "year": 2024,
+    "type": "LLM",
+    "description": "7B–72B; top multilingual OSS.",
+    "open_source": true
+  },
+  {
+    "id": "qwen-2.5",
+    "name": "Qwen 2.5",
+    "org": "Alibaba",
+    "year": 2024,
+    "type": "LLM",
+    "description": "0.5B–72B; improved math/code/multilingual.",
+    "open_source": true
+  },
+  {
+    "id": "qwen-2.5-coder",
+    "name": "Qwen 2.5 Coder",
+    "org": "Alibaba",
+    "year": 2024,
+    "type": "LLM",
+    "description": "Code specialist; 7B–32B.",
+    "open_source": true
+  },
+  {
+    "id": "qwq-32b",
+    "name": "QwQ-32B",
+    "org": "Alibaba",
+    "year": 2025,
+    "type": "LLM",
+    "description": "32B reasoning model; chain-of-thought.",
+    "open_source": true
+  },
+  {
+    "id": "deepseek-v2",
+    "name": "DeepSeek-V2",
+    "org": "DeepSeek",
+    "year": 2024,
+    "type": "LLM",
+    "description": "236B MoE; economical training.",
+    "open_source": true
+  },
+  {
+    "id": "deepseek-v3",
+    "name": "DeepSeek-V3",
+    "org": "DeepSeek",
+    "year": 2024,
+    "type": "LLM",
+    "description": "671B MoE; SOTA OSS at launch.",
+    "open_source": true
+  },
+  {
+    "id": "deepseek-r1",
+    "name": "DeepSeek-R1",
+    "org": "DeepSeek",
+    "year": 2025,
+    "type": "LLM",
+    "description": "Reasoning model rivaling o1; full RL training.",
+    "open_source": true
+  },
+  {
+    "id": "yi-34b",
+    "name": "Yi-34B",
+    "org": "01.AI",
+    "year": 2023,
+    "type": "LLM",
+    "description": "Bilingual EN/ZH; 200K context version.",
+    "open_source": true
+  },
+  {
+    "id": "command-r",
+    "name": "Command R",
+    "org": "Cohere",
+    "year": 2024,
+    "type": "LLM",
+    "description": "RAG-optimized; grounded generation.",
+    "open_source": false
+  },
+  {
+    "id": "command-r-plus",
+    "name": "Command R+",
+    "org": "Cohere",
+    "year": 2024,
+    "type": "LLM",
+    "description": "104B; enterprise RAG flagship.",
+    "open_source": false
+  },
+  {
+    "id": "dbrx",
+    "name": "DBRX",
+    "org": "Databricks",
+    "year": 2024,
+    "type": "LLM",
+    "description": "132B MoE; Apache 2.0; beats GPT-3.5 on many benchmarks.",
+    "open_source": true
+  },
+  {
+    "id": "solar-10.7b",
+    "name": "SOLAR 10.7B",
+    "org": "Upstage",
+    "year": 2023,
+    "type": "LLM",
+    "description": "Depth up-scaling; efficient fine-tuning.",
+    "open_source": true
+  },
+  {
+    "id": "olmo-7b",
+    "name": "OLMo 7B",
+    "org": "AI2",
+    "year": 2024,
+    "type": "LLM",
+    "description": "Fully open (weights + data + training).",
+    "open_source": true
+  },
+  {
+    "id": "granite-3",
+    "name": "Granite 3",
+    "org": "IBM",
+    "year": 2024,
+    "type": "LLM",
+    "description": "Enterprise LLM family; Apache 2.0.",
+    "open_source": true
+  },
+  {
+    "id": "codex",
+    "name": "Codex",
+    "org": "OpenAI",
+    "year": 2021,
+    "type": "Code",
+    "description": "Powers GitHub Copilot; fine-tuned GPT-3 on code.",
+    "open_source": false
+  },
+  {
+    "id": "starcoder",
+    "name": "StarCoder",
+    "org": "BigCode",
+    "year": 2023,
+    "type": "Code",
+    "description": "15.5B; 80+ langs; Hugging Face collab.",
+    "open_source": true
+  },
+  {
+    "id": "starcoder2",
+    "name": "StarCoder 2",
+    "org": "BigCode",
+    "year": 2024,
+    "type": "Code",
+    "description": "3B/7B/15B; 600+ programming languages.",
+    "open_source": true
+  },
+  {
+    "id": "code-llama",
+    "name": "Code LLaMA",
+    "org": "Meta AI",
+    "year": 2023,
+    "type": "Code",
+    "description": "7B–34B; Python/instruct variants.",
+    "open_source": true
+  },
+  {
+    "id": "codestral",
+    "name": "Codestral",
+    "org": "Mistral AI",
+    "year": 2024,
+    "type": "Code",
+    "description": "22B code model; fill-in-the-middle.",
+    "open_source": false
+  },
+  {
+    "id": "deepseek-coder",
+    "name": "DeepSeek-Coder",
+    "org": "DeepSeek",
+    "year": 2024,
+    "type": "Code",
+    "description": "1.3B–33B; top code benchmarks.",
+    "open_source": true
+  },
+  {
+    "id": "dall-e-1",
+    "name": "DALL-E 1",
+    "org": "OpenAI",
+    "year": 2021,
+    "type": "Vision",
+    "description": "First text-to-image GPT variant.",
+    "open_source": false
+  },
+  {
+    "id": "dall-e-2",
+    "name": "DALL-E 2",
+    "org": "OpenAI",
+    "year": 2022,
+    "type": "Vision",
+    "description": "Diffusion model; inpainting; outpainting.",
+    "open_source": false
+  },
+  {
+    "id": "dall-e-3",
+    "name": "DALL-E 3",
+    "org": "OpenAI",
+    "year": 2023,
+    "type": "Vision",
+    "description": "Prompt adherence; integrated with ChatGPT.",
+    "open_source": false
+  },
+  {
+    "id": "stable-diffusion-1",
+    "name": "Stable Diffusion 1",
+    "org": "StabilityAI",
+    "year": 2022,
+    "type": "Vision",
+    "description": "Latent diffusion; open weights revolutionized art.",
+    "open_source": true
+  },
+  {
+    "id": "stable-diffusion-xl",
+    "name": "SDXL",
+    "org": "StabilityAI",
+    "year": 2023,
+    "type": "Vision",
+    "description": "1024px base; refiner pipeline.",
+    "open_source": true
+  },
+  {
+    "id": "stable-diffusion-3",
+    "name": "Stable Diffusion 3",
+    "org": "StabilityAI",
+    "year": 2024,
+    "type": "Vision",
+    "description": "Multimodal diffusion transformer.",
+    "open_source": true
+  },
+  {
+    "id": "flux-1",
+    "name": "FLUX.1",
+    "org": "Black Forest Labs",
+    "year": 2024,
+    "type": "Vision",
+    "description": "Flow matching; best OSS image quality.",
+    "open_source": true
+  },
+  {
+    "id": "midjourney-v6",
+    "name": "Midjourney v6",
+    "org": "Midjourney",
+    "year": 2024,
+    "type": "Vision",
+    "description": "Photorealistic image gen; Discord-based.",
+    "open_source": false
+  },
+  {
+    "id": "imagen-3",
+    "name": "Imagen 3",
+    "org": "Google",
+    "year": 2024,
+    "type": "Vision",
+    "description": "Photorealistic; prompt adherence.",
+    "open_source": false
+  },
+  {
+    "id": "firefly-3",
+    "name": "Adobe Firefly 3",
+    "org": "Adobe",
+    "year": 2024,
+    "type": "Vision",
+    "description": "Commercially safe; stock-trained.",
+    "open_source": false
+  },
+  {
+    "id": "ideogram-2",
+    "name": "Ideogram 2",
+    "org": "Ideogram",
+    "year": 2024,
+    "type": "Vision",
+    "description": "Best text-in-image; photorealism.",
+    "open_source": false
+  },
+  {
+    "id": "clip",
+    "name": "CLIP",
+    "org": "OpenAI",
+    "year": 2021,
+    "type": "VLM",
+    "description": "Contrastive image-text pretraining.",
+    "open_source": true
+  },
+  {
+    "id": "flamingo",
+    "name": "Flamingo",
+    "org": "DeepMind",
+    "year": 2022,
+    "type": "VLM",
+    "description": "Few-shot visual reasoning.",
+    "open_source": false
+  },
+  {
+    "id": "gpt-4v",
+    "name": "GPT-4V",
+    "org": "OpenAI",
+    "year": 2023,
+    "type": "VLM",
+    "description": "Vision-capable GPT-4.",
+    "open_source": false
+  },
+  {
+    "id": "llava",
+    "name": "LLaVA",
+    "org": "Haotian Liu/UW",
+    "year": 2023,
+    "type": "VLM",
+    "description": "CLIP + LLaMA visual instruction tuning.",
+    "open_source": true
+  },
+  {
+    "id": "llava-1.6",
+    "name": "LLaVA-NeXT",
+    "org": "Haotian Liu",
+    "year": 2024,
+    "type": "VLM",
+    "description": "Dynamic resolution; improved OCR.",
+    "open_source": true
+  },
+  {
+    "id": "idefics-2",
+    "name": "Idefics 2",
+    "org": "HuggingFace",
+    "year": 2024,
+    "type": "VLM",
+    "description": "8B open multimodal; PDF/charts.",
+    "open_source": true
+  },
+  {
+    "id": "paligemma",
+    "name": "PaliGemma",
+    "org": "Google",
+    "year": 2024,
+    "type": "VLM",
+    "description": "Gemma + SigLIP; visual QA/captioning.",
+    "open_source": true
+  },
+  {
+    "id": "internvl-2",
+    "name": "InternVL 2",
+    "org": "OpenGVLab",
+    "year": 2024,
+    "type": "VLM",
+    "description": "1B–108B; top open-source VLM.",
+    "open_source": true
+  },
+  {
+    "id": "whisper",
+    "name": "Whisper",
+    "org": "OpenAI",
+    "year": 2022,
+    "type": "Audio",
+    "description": "Robust ASR; 99 languages; open weights.",
+    "open_source": true
+  },
+  {
+    "id": "musiclm",
+    "name": "MusicLM",
+    "org": "Google",
+    "year": 2023,
+    "type": "Audio",
+    "description": "Text-to-music generation.",
+    "open_source": false
+  },
+  {
+    "id": "audiocraft",
+    "name": "AudioCraft / MusicGen",
+    "org": "Meta AI",
+    "year": 2023,
+    "type": "Audio",
+    "description": "Open music/sound generation.",
+    "open_source": true
+  },
+  {
+    "id": "suno-v3",
+    "name": "Suno v3",
+    "org": "Suno",
+    "year": 2024,
+    "type": "Audio",
+    "description": "Full song generation with vocals.",
+    "open_source": false
+  },
+  {
+    "id": "udio",
+    "name": "Udio",
+    "org": "Udio",
+    "year": 2024,
+    "type": "Audio",
+    "description": "Studio-quality AI music.",
+    "open_source": false
+  },
+  {
+    "id": "kokoro-tts",
+    "name": "Kokoro TTS",
+    "org": "Kokoro",
+    "year": 2024,
+    "type": "Audio",
+    "description": "82M TTS model; best open quality.",
+    "open_source": true
+  },
+  {
+    "id": "sora",
+    "name": "Sora",
+    "org": "OpenAI",
+    "year": 2024,
+    "type": "Video",
+    "description": "Diffusion transformer; 60s HD video.",
+    "open_source": false
+  },
+  {
+    "id": "runway-gen3",
+    "name": "Runway Gen-3",
+    "org": "Runway",
+    "year": 2024,
+    "type": "Video",
+    "description": "High-fidelity text-to-video.",
+    "open_source": false
+  },
+  {
+    "id": "kling",
+    "name": "Kling",
+    "org": "Kuaishou",
+    "year": 2024,
+    "type": "Video",
+    "description": "2-minute video; consistent motion.",
+    "open_source": false
+  },
+  {
+    "id": "wan-video",
+    "name": "Wan Video",
+    "org": "Alibaba",
+    "year": 2025,
+    "type": "Video",
+    "description": "Open-source high-quality T2V.",
+    "open_source": true
+  },
+  {
+    "id": "alphago",
+    "name": "AlphaGo",
+    "org": "DeepMind",
+    "year": 2016,
+    "type": "RL/Game",
+    "description": "Defeated world Go champion Lee Sedol.",
+    "open_source": false
+  },
+  {
+    "id": "alphazero",
+    "name": "AlphaZero",
+    "org": "DeepMind",
+    "year": 2017,
+    "type": "RL/Game",
+    "description": "Tabula rasa: chess/Go/shogi from self-play.",
+    "open_source": false
+  },
+  {
+    "id": "alphafold-2",
+    "name": "AlphaFold 2",
+    "org": "DeepMind",
+    "year": 2020,
+    "type": "Science",
+    "description": "Solved protein folding; Nobel-adjacent.",
+    "open_source": true
+  },
+  {
+    "id": "alphafold-3",
+    "name": "AlphaFold 3",
+    "org": "Google DeepMind",
+    "year": 2024,
+    "type": "Science",
+    "description": "All biomolecules; drug discovery.",
+    "open_source": false
+  },
+  {
+    "id": "openai-five",
+    "name": "OpenAI Five",
+    "org": "OpenAI",
+    "year": 2019,
+    "type": "RL/Game",
+    "description": "Dota 2 world-champion multi-agent.",
+    "open_source": false
+  },
+  {
+    "id": "muzero",
+    "name": "MuZero",
+    "org": "DeepMind",
+    "year": 2019,
+    "type": "RL/Game",
+    "description": "Model-based RL without known rules.",
+    "open_source": false
+  },
+  {
+    "id": "rt-2",
+    "name": "Robotics Transformer 2",
+    "org": "Google",
+    "year": 2023,
+    "type": "Robotics",
+    "description": "VLM-to-robot actions; web-scale training.",
+    "open_source": false
+  },
+  {
+    "id": "gato",
+    "name": "Gato",
+    "org": "DeepMind",
+    "year": 2022,
+    "type": "Generalist",
+    "description": "Generalist agent: 600 tasks, one model.",
+    "open_source": false
+  },
+  {
+    "id": "voyager",
+    "name": "Voyager",
+    "org": "NVIDIA/UT",
+    "year": 2023,
+    "type": "Agent",
+    "description": "LLM-powered Minecraft agent; skill library.",
+    "open_source": true
+  },
+  {
+    "id": "autogpt",
+    "name": "AutoGPT",
+    "org": "Toran Richards",
+    "year": 2023,
+    "type": "Agent",
+    "description": "First viral autonomous GPT-4 agent.",
+    "open_source": true
+  },
+  {
+    "id": "babyagi",
+    "name": "BabyAGI",
+    "org": "Yohei Nakajima",
+    "year": 2023,
+    "type": "Agent",
+    "description": "Task-driven autonomous agent loop.",
+    "open_source": true
+  },
+  {
+    "id": "agent-gpt",
+    "name": "AgentGPT",
+    "org": "reworkd",
+    "year": 2023,
+    "type": "Agent",
+    "description": "Browser-based autonomous agent.",
+    "open_source": true
+  },
+  {
+    "id": "devin",
+    "name": "Devin",
+    "org": "Cognition AI",
+    "year": 2024,
+    "type": "Agent",
+    "description": "First AI software engineer.",
+    "open_source": false
+  },
+  {
+    "id": "swe-agent",
+    "name": "SWE-agent",
+    "org": "Princeton",
+    "year": 2024,
+    "type": "Agent",
+    "description": "Agent-Computer Interface for software tasks.",
+    "open_source": true
+  },
+  {
+    "id": "openhands",
+    "name": "OpenHands",
+    "org": "All-Hands AI",
+    "year": 2024,
+    "type": "Agent",
+    "description": "Open-source Devin alternative.",
+    "open_source": true
+  },
+  {
+    "id": "eliza",
+    "name": "ELIZA",
+    "org": "MIT",
+    "year": 1966,
+    "type": "Chatbot",
+    "description": "First chatbot; DOCTOR script; Rogerian therapist.",
+    "open_source": true
+  },
+  {
+    "id": "parry",
+    "name": "PARRY",
+    "org": "Stanford",
+    "year": 1972,
+    "type": "Chatbot",
+    "description": "Simulated paranoid schizophrenic.",
+    "open_source": false
+  },
+  {
+    "id": "alice-bot",
+    "name": "A.L.I.C.E.",
+    "org": "R. Wallace",
+    "year": 1995,
+    "type": "Chatbot",
+    "description": "AIML-based; 3× Loebner Prize winner.",
+    "open_source": true
+  },
+  {
+    "id": "deep-blue",
+    "name": "Deep Blue",
+    "org": "IBM",
+    "year": 1997,
+    "type": "RL/Game",
+    "description": "Defeated Kasparov at chess.",
+    "open_source": false
+  },
+  {
+    "id": "watson",
+    "name": "Watson",
+    "org": "IBM",
+    "year": 2010,
+    "type": "QA",
+    "description": "Jeopardy! champion; NLP/knowledge graphs.",
+    "open_source": false
+  },
+  {
+    "id": "siri",
+    "name": "Siri",
+    "org": "Apple",
+    "year": 2011,
+    "type": "Assistant",
+    "description": "First mainstream voice assistant.",
+    "open_source": false
+  },
+  {
+    "id": "google-now",
+    "name": "Google Now",
+    "org": "Google",
+    "year": 2012,
+    "type": "Assistant",
+    "description": "Contextual predictive assistant.",
+    "open_source": false
+  },
+  {
+    "id": "cortana",
+    "name": "Cortana",
+    "org": "Microsoft",
+    "year": 2014,
+    "type": "Assistant",
+    "description": "Windows 10 integrated assistant.",
+    "open_source": false
+  },
+  {
+    "id": "alexa",
+    "name": "Alexa",
+    "org": "Amazon",
+    "year": 2014,
+    "type": "Assistant",
+    "description": "Smart speaker assistant; skills ecosystem.",
+    "open_source": false
+  },
+  {
+    "id": "tay",
+    "name": "Tay",
+    "org": "Microsoft",
+    "year": 2016,
+    "type": "Chatbot",
+    "description": "Twitter chatbot taken offline after 16h.",
+    "open_source": false
+  },
+  {
+    "id": "meena",
+    "name": "Meena / LaMDA",
+    "org": "Google",
+    "year": 2020,
+    "type": "Chatbot",
+    "description": "Sensibleness and Specificity metric.",
+    "open_source": false
+  },
+  {
+    "id": "blenderbot",
+    "name": "BlenderBot 3",
+    "org": "Meta AI",
+    "year": 2022,
+    "type": "Chatbot",
+    "description": "Long-term memory; internet search.",
+    "open_source": true
+  },
+  {
+    "id": "bert",
+    "name": "BERT",
+    "org": "Google",
+    "year": 2018,
+    "type": "Encoder",
+    "description": "Bidirectional transformers; revolutionized NLP.",
+    "open_source": true
+  },
+  {
+    "id": "roberta",
+    "name": "RoBERTa",
+    "org": "Facebook AI",
+    "year": 2019,
+    "type": "Encoder",
+    "description": "Robustly optimized BERT pretraining.",
+    "open_source": true
+  },
+  {
+    "id": "t5",
+    "name": "T5",
+    "org": "Google",
+    "year": 2019,
+    "type": "Seq2Seq",
+    "description": "Text-to-Text Transfer Transformer.",
+    "open_source": true
+  },
+  {
+    "id": "bart",
+    "name": "BART",
+    "org": "Facebook AI",
+    "year": 2019,
+    "type": "Seq2Seq",
+    "description": "Denoising autoencoder; summarization.",
+    "open_source": true
+  },
+  {
+    "id": "minerva",
+    "name": "Minerva",
+    "org": "Google",
+    "year": 2022,
+    "type": "Math",
+    "description": "Math reasoning via PaLM fine-tuning.",
+    "open_source": false
+  },
+  {
+    "id": "mathstral",
+    "name": "Mathstral",
+    "org": "Mistral AI",
+    "year": 2024,
+    "type": "Math",
+    "description": "7B math specialist.",
+    "open_source": true
+  },
+  {
+    "id": "numina-math",
+    "name": "NuminaMath",
+    "org": "AI for Math",
+    "year": 2024,
+    "type": "Math",
+    "description": "Won AI Mathematical Olympiad competition.",
+    "open_source": true
+  },
+  {
+    "id": "text-embedding-ada",
+    "name": "text-embedding-ada-002",
+    "org": "OpenAI",
+    "year": 2022,
+    "type": "Embedding",
+    "description": "Standard RAG embedding; 1536-dim.",
+    "open_source": false
+  },
+  {
+    "id": "e5-large",
+    "name": "E5-Large",
+    "org": "Microsoft",
+    "year": 2022,
+    "type": "Embedding",
+    "description": "Top open embedding; multilingual variant.",
+    "open_source": true
+  },
+  {
+    "id": "bge-m3",
+    "name": "BGE-M3",
+    "org": "BAAI",
+    "year": 2024,
+    "type": "Embedding",
+    "description": "Multi-Functionality/Multi-Lingual/Multi-Granularity.",
+    "open_source": true
+  },
+  {
+    "id": "nomic-embed",
+    "name": "Nomic Embed",
+    "org": "Nomic AI",
+    "year": 2024,
+    "type": "Embedding",
+    "description": "8192 context; Apache 2.0.",
+    "open_source": true
+  },
+  {
+    "id": "langchain-agent",
+    "name": "LangChain Agent",
+    "org": "LangChain",
+    "year": 2022,
+    "type": "Framework",
+    "description": "Chain/agent orchestration framework.",
+    "open_source": true
+  },
+  {
+    "id": "llamaindex-agent",
+    "name": "LlamaIndex Agent",
+    "org": "LlamaIndex",
+    "year": 2022,
+    "type": "Framework",
+    "description": "Data-aware agents; RAG pipelines.",
+    "open_source": true
+  },
+  {
+    "id": "semantic-kernel",
+    "name": "Semantic Kernel",
+    "org": "Microsoft",
+    "year": 2023,
+    "type": "Framework",
+    "description": ".NET/Python agent SDK.",
+    "open_source": true
+  },
+  {
+    "id": "autogen",
+    "name": "AutoGen",
+    "org": "Microsoft",
+    "year": 2023,
+    "type": "Framework",
+    "description": "Multi-agent conversation framework.",
+    "open_source": true
+  },
+  {
+    "id": "crewai",
+    "name": "CrewAI",
+    "org": "CrewAI",
+    "year": 2023,
+    "type": "Framework",
+    "description": "Role-based multi-agent framework.",
+    "open_source": true
+  },
+  {
+    "id": "langgraph",
+    "name": "LangGraph",
+    "org": "LangChain",
+    "year": 2024,
+    "type": "Framework",
+    "description": "Graph-based agent state machines.",
+    "open_source": true
+  },
+  {
+    "id": "dspy",
+    "name": "DSPy",
+    "org": "Stanford",
+    "year": 2023,
+    "type": "Framework",
+    "description": "Declarative LLM programming.",
+    "open_source": true
+  },
+  {
+    "id": "openai-assistants",
+    "name": "OpenAI Assistants",
+    "org": "OpenAI",
+    "year": 2023,
+    "type": "Platform",
+    "description": "Threads, tools, files API.",
+    "open_source": false
+  },
+  {
+    "id": "bedrock-agents",
+    "name": "Amazon Bedrock Agents",
+    "org": "AWS",
+    "year": 2023,
+    "type": "Platform",
+    "description": "Managed agent orchestration on AWS.",
+    "open_source": false
+  },
+  {
+    "id": "vertex-ai-agents",
+    "name": "Vertex AI Agents",
+    "org": "Google Cloud",
+    "year": 2023,
+    "type": "Platform",
+    "description": "Managed agent builder on GCP.",
+    "open_source": false
+  },
+  {
+    "id": "orca-mini-3b",
+    "name": "Orca Mini 3B",
+    "org": "Microsoft",
+    "year": 2023,
+    "type": "GGUF",
+    "description": "3B model optimised for GGUF local inference.",
+    "open_source": true
+  },
+  {
+    "id": "tinyllama-1.1b",
+    "name": "TinyLLaMA 1.1B",
+    "org": "StatNLP",
+    "year": 2023,
+    "type": "GGUF",
+    "description": "1.1B LLaMA for edge devices.",
+    "open_source": true
+  },
+  {
+    "id": "stablelm-2-1.6b",
+    "name": "StableLM 2 1.6B",
+    "org": "StabilityAI",
+    "year": 2024,
+    "type": "GGUF",
+    "description": "1.6B multilingual SLM.",
+    "open_source": true
+  },
+  {
+    "id": "smollm-1.7b",
+    "name": "SmolLM 1.7B",
+    "org": "HuggingFace",
+    "year": 2024,
+    "type": "GGUF",
+    "description": "Tiny on-device LLM.",
+    "open_source": true
+  },
+  {
+    "id": "llama-3.2-1b",
+    "name": "LLaMA 3.2 1B",
+    "org": "Meta AI",
+    "year": 2024,
+    "type": "GGUF",
+    "description": "1B LLaMA for edge/GGUF.",
+    "open_source": true
+  },
+  {
+    "id": "llama-3.2-3b",
+    "name": "LLaMA 3.2 3B",
+    "org": "Meta AI",
+    "year": 2024,
+    "type": "GGUF",
+    "description": "3B LLaMA for local inference.",
+    "open_source": true
+  },
+  {
+    "id": "qwen-2.5-1.5b",
+    "name": "Qwen 2.5 1.5B",
+    "org": "Alibaba",
+    "year": 2024,
+    "type": "GGUF",
+    "description": "1.5B multilingual GGUF model.",
+    "open_source": true
+  },
+  {
+    "id": "internlm-2.5-1.8b",
+    "name": "InternLM 2.5 1.8B",
+    "org": "Shanghai AI Lab",
+    "year": 2024,
+    "type": "GGUF",
+    "description": "1.8B with function calling.",
+    "open_source": true
+  }
+]

@@ -3,6 +3,13 @@ from .orchestrator import OrchestratorAgent
 from .game_agents import ContentAgent, NarrativeAgent, AnalyticsAgent
 from .dynamic_agent import DynamicAgent
 from .research_agents import DeepResearchOrchestrator
+from .agent_builder import (
+    ProCodeBuilder,
+    NoCodeBuilder,
+    HybridBuilder,
+    CustomAgentSpec,
+    CustomAgentStore,
+)
 from .edu_agents import (
     EducationalAgent,
     create_all_edu_agents,
@@ -89,6 +96,12 @@ __all__ = [
     "DynamicAgent",
     # Research
     "DeepResearchOrchestrator",
+    # Agent Builder
+    "ProCodeBuilder",
+    "NoCodeBuilder",
+    "HybridBuilder",
+    "CustomAgentSpec",
+    "CustomAgentStore",
     # Education (AAK – Cyfrowa Agora Wiedzy)
     "EducationalAgent",
     "create_all_edu_agents",

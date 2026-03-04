@@ -133,8 +133,83 @@ class GeminiLlmClient(BaseLlmClient):
 
 
 # ---------------------------------------------------------------------------
-# Fabryka
+# Backend: GGUF – llama.cpp via llama-cpp-python (obsługa 2 plików)
 # ---------------------------------------------------------------------------
+
+class GgufLlmClient(BaseLlmClient):
+    """
+    Klient lokalnych modeli w formacie GGUF (llama-cpp-python).
+
+    Obsługuje jednocześnie dwa pliki GGUF:
+      - ``path1`` : model podstawowy (domyślny)
+      - ``path2`` : model alternatywny (opcjonalny, wymagany dla routing)
+
+    Strategia wyboru modelu:
+      - Jeśli prompt zawiera słowo kluczowe ``[MODEL2]`` – użyj modelu 2.
+      - W pozostałych przypadkach – użyj modelu 1.
+    """
+
+    MODEL2_KEYWORD = "[MODEL2]"
+
+    def __init__(
+        self,
+        path1: str,
+        path2: str = "",
+        n_ctx: int = 2048,
+        max_tokens: int = 512,
+        n_threads: int = 4,
+    ) -> None:
+        try:
+            from llama_cpp import Llama  # noqa: F401
+        except ImportError as exc:
+            raise ImportError(
+                "Pakiet 'llama-cpp-python' nie jest zainstalowany. "
+                "Uruchom: pip install llama-cpp-python"
+            ) from exc
+
+        from llama_cpp import Llama
+
+        if not path1:
+            raise ValueError("GGUF_MODEL_PATH_1 jest wymagany dla GgufLlmClient.")
+
+        self._model1 = Llama(
+            model_path=path1,
+            n_ctx=n_ctx,
+            n_threads=n_threads,
+            verbose=False,
+        )
+        logger.info("[LLM] Załadowano GGUF model 1: %s", path1)
+
+        self._model2: "Llama | None" = None
+        if path2:
+            self._model2 = Llama(
+                model_path=path2,
+                n_ctx=n_ctx,
+                n_threads=n_threads,
+                verbose=False,
+            )
+            logger.info("[LLM] Załadowano GGUF model 2: %s", path2)
+
+        self._max_tokens = max_tokens
+
+    def _select_model(self, prompt: str) -> Any:
+        """Zwraca właściwy model na podstawie słowa kluczowego w prompcie."""
+        if self.MODEL2_KEYWORD in prompt and self._model2 is not None:
+            return self._model2
+        return self._model1
+
+    async def generate(self, prompt: str) -> str:
+        """Generuje odpowiedź z wybranego modelu GGUF (wywołanie synchroniczne w wątku)."""
+        model = self._select_model(prompt)
+        clean_prompt = prompt.replace(self.MODEL2_KEYWORD, "").strip()
+
+        def _call() -> str:
+            output = model(clean_prompt, max_tokens=self._max_tokens)
+            return output["choices"][0]["text"].strip()  # type: ignore[index]
+
+        return await asyncio.to_thread(_call)
+
+
 
 def create_llm_client(settings: "Settings | None" = None) -> BaseLlmClient:
     """
@@ -172,6 +247,20 @@ def create_llm_client(settings: "Settings | None" = None) -> BaseLlmClient:
         return GeminiLlmClient(
             api_key=settings.gemini_api_key,
             model=settings.gemini_model,
+        )
+
+    if backend == "gguf":
+        if not settings.gguf_model_path_1:
+            logger.warning(
+                "[LLM] GGUF_MODEL_PATH_1 nie ustawiony – przełączam na mock."
+            )
+            return MockLlmClient()
+        return GgufLlmClient(
+            path1=settings.gguf_model_path_1,
+            path2=settings.gguf_model_path_2,
+            n_ctx=settings.gguf_n_ctx,
+            max_tokens=settings.gguf_max_tokens,
+            n_threads=settings.gguf_n_threads,
         )
 
     return MockLlmClient()

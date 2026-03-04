@@ -885,3 +885,439 @@ async def registry_session(
         specialization= result.get("specialization", ""),
         response      = result.get("response", ""),
     )
+
+
+# ===========================================================================
+# Helper: ładowanie danych historycznych agentów
+# ===========================================================================
+
+def _load_historical_agents() -> list[dict]:
+    """Ładuje dane z data/historical_agents.json."""
+    import json
+    from pathlib import Path
+    path = Path(__file__).parent.parent.parent / "data" / "historical_agents.json"
+    if not path.exists():
+        return []
+    with open(path, encoding="utf-8") as fh:
+        return json.load(fh)
+
+
+# ===========================================================================
+# Router: Historical AI Catalog
+# ===========================================================================
+
+historical_router = APIRouter(prefix="/historical", tags=["historical"])
+
+
+@historical_router.get("/agents", tags=["historical"])
+async def list_historical_agents(
+    type_filter: str = "",
+    org_filter:  str = "",
+    open_source: bool | None = None,
+    offset: int = 0,
+    limit:  int = 50,
+) -> dict[str, Any]:
+    """
+    Zwraca katalog historycznych modeli i agentów AI (151+ wpisów).
+
+    Parametry filtrowania:
+        type_filter  : LLM, Vision, Audio, Video, Agent, Chatbot, …
+        org_filter   : OpenAI, Google, Meta AI, …
+        open_source  : true / false
+    """
+    agents = _load_historical_agents()
+    if type_filter:
+        agents = [a for a in agents if type_filter.lower() in a.get("type", "").lower()]
+    if org_filter:
+        agents = [a for a in agents if org_filter.lower() in a.get("org", "").lower()]
+    if open_source is not None:
+        agents = [a for a in agents if a.get("open_source") == open_source]
+    total = len(agents)
+    limit = min(limit, 500)
+    return {
+        "total":   total,
+        "offset":  offset,
+        "limit":   limit,
+        "agents":  agents[offset: offset + limit],
+    }
+
+
+@historical_router.get("/agents/{agent_id}", tags=["historical"])
+async def get_historical_agent(agent_id: str) -> dict[str, Any]:
+    """Zwraca szczegóły historycznego agenta po jego ID."""
+    agents = _load_historical_agents()
+    for a in agents:
+        if a.get("id") == agent_id:
+            return a
+    raise HTTPException(status_code=404, detail=f"Historyczny agent '{agent_id}' nieznany.")
+
+
+@historical_router.get("/stats", tags=["historical"])
+async def historical_stats() -> dict[str, Any]:
+    """Statystyki katalogu historycznych agentów."""
+    agents = _load_historical_agents()
+    types: dict[str, int] = {}
+    orgs:  dict[str, int] = {}
+    for a in agents:
+        t = a.get("type", "Unknown")
+        o = a.get("org", "Unknown")
+        types[t] = types.get(t, 0) + 1
+        orgs[o]  = orgs.get(o, 0) + 1
+    open_count = sum(1 for a in agents if a.get("open_source"))
+    return {
+        "total":        len(agents),
+        "open_source":  open_count,
+        "closed_source":len(agents) - open_count,
+        "by_type":      dict(sorted(types.items(), key=lambda x: -x[1])),
+        "by_org":       dict(sorted(orgs.items(),  key=lambda x: -x[1])[:20]),
+    }
+
+
+# ===========================================================================
+# Router: Agent Builder (Pro Code / No Code / Hybrid)
+# ===========================================================================
+
+class BuildNoCodeRequest(BaseModel):
+    display_name:         str = Field(..., min_length=2, max_length=100)
+    domain:               str
+    role:                 str
+    specialization:       str
+    category:             str = "specialist"
+    safety:               str = "safe"
+    extra_instructions:   str = ""
+
+
+class BuildProCodeRequest(BaseModel):
+    display_name:   str = Field(..., min_length=2)
+    domain:         str
+    role:           str
+    specialization: str
+    mission:        str
+    system_prompt:  str = Field(..., min_length=10)
+    category:       str = "specialist"
+    safety:         str = "safe"
+    custom_code:    str = ""
+    tools:          list[str] = []
+    metadata:       dict[str, Any] = {}
+
+
+class BuildHybridRequest(BaseModel):
+    display_name:          str = Field(..., min_length=2)
+    domain:                str
+    role:                  str
+    specialization:        str
+    category:              str = "specialist"
+    safety:                str = "safe"
+    system_prompt_override: str = ""
+    custom_code:           str = ""
+    tools:                 list[str] = []
+    metadata:              dict[str, Any] = {}
+
+
+class CustomAgentResponse(BaseModel):
+    agent_id:       str
+    display_name:   str
+    domain:         str
+    role:           str
+    specialization: str
+    mission:        str
+    category:       str
+    safety:         str
+    builder_mode:   str
+    created_at:     str
+
+
+builder_router = APIRouter(prefix="/builder", tags=["builder"])
+
+
+@builder_router.get("/options", tags=["builder"])
+async def get_builder_options() -> dict[str, Any]:
+    """Zwraca dostępne opcje formularza No-Code."""
+    from src.agents.agent_builder import NoCodeBuilder
+    return NoCodeBuilder.get_form_options()
+
+
+@builder_router.post("/no-code", response_model=CustomAgentResponse)
+async def build_no_code(req: BuildNoCodeRequest, request: Request) -> CustomAgentResponse:
+    """Tworzy agenta za pomocą formularza No-Code."""
+    from src.agents.agent_builder import NoCodeBuilder, CustomAgentStore
+    user = _get_current_user(request)
+    try:
+        builder = NoCodeBuilder()
+        spec    = builder.build(
+            display_name       = req.display_name,
+            domain             = req.domain,
+            role               = req.role,
+            specialization     = req.specialization,
+            category           = req.category,
+            safety             = req.safety,
+            extra_instructions = req.extra_instructions,
+            created_by         = user,
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+    CustomAgentStore().add(spec)
+    return _spec_to_response(spec)
+
+
+@builder_router.post("/pro-code", response_model=CustomAgentResponse)
+async def build_pro_code(req: BuildProCodeRequest, request: Request) -> CustomAgentResponse:
+    """Tworzy agenta z pełnej specyfikacji JSON (Pro Code)."""
+    from src.agents.agent_builder import ProCodeBuilder, CustomAgentStore
+    user = _get_current_user(request)
+    try:
+        builder = ProCodeBuilder()
+        spec    = builder.build(
+            payload    = req.model_dump(),
+            created_by = user,
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+    CustomAgentStore().add(spec)
+    return _spec_to_response(spec)
+
+
+@builder_router.post("/hybrid", response_model=CustomAgentResponse)
+async def build_hybrid(req: BuildHybridRequest, request: Request) -> CustomAgentResponse:
+    """Tworzy agenta hybrydowego (formularz + opcjonalne nadpisania)."""
+    from src.agents.agent_builder import HybridBuilder, CustomAgentStore
+    user = _get_current_user(request)
+    try:
+        builder = HybridBuilder()
+        spec    = builder.build(
+            display_name          = req.display_name,
+            domain                = req.domain,
+            role                  = req.role,
+            specialization        = req.specialization,
+            category              = req.category,
+            safety                = req.safety,
+            system_prompt_override= req.system_prompt_override,
+            custom_code           = req.custom_code,
+            tools                 = req.tools or None,
+            metadata              = req.metadata or None,
+            created_by            = user,
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+    CustomAgentStore().add(spec)
+    return _spec_to_response(spec)
+
+
+@builder_router.get("/agents", tags=["builder"])
+async def list_custom_agents(offset: int = 0, limit: int = 50) -> dict[str, Any]:
+    """Zwraca listę agentów zbudowanych przez użytkownika."""
+    from src.agents.agent_builder import CustomAgentStore
+    store = CustomAgentStore()
+    limit = min(limit, 200)
+    return {
+        "total":  store.count(),
+        "offset": offset,
+        "limit":  limit,
+        "agents": [a.to_dict() for a in store.page(offset, limit)],
+    }
+
+
+@builder_router.get("/agents/{agent_id}", tags=["builder"])
+async def get_custom_agent(agent_id: str) -> dict[str, Any]:
+    """Zwraca szczegóły custom agenta."""
+    from src.agents.agent_builder import CustomAgentStore
+    spec = CustomAgentStore().get(agent_id)
+    if spec is None:
+        raise HTTPException(status_code=404, detail=f"Custom agent '{agent_id}' nieznany.")
+    return spec.to_dict()
+
+
+@builder_router.delete("/agents/{agent_id}", tags=["builder"])
+async def delete_custom_agent(agent_id: str) -> dict[str, str]:
+    """Usuwa custom agenta."""
+    from src.agents.agent_builder import CustomAgentStore
+    if not CustomAgentStore().delete(agent_id):
+        raise HTTPException(status_code=404, detail=f"Custom agent '{agent_id}' nieznany.")
+    return {"status": "deleted", "agent_id": agent_id}
+
+
+def _spec_to_response(spec: Any) -> "CustomAgentResponse":
+    return CustomAgentResponse(
+        agent_id      = spec.agent_id,
+        display_name  = spec.display_name,
+        domain        = spec.domain,
+        role          = spec.role,
+        specialization= spec.specialization,
+        mission       = spec.mission,
+        category      = spec.category,
+        safety        = spec.safety,
+        builder_mode  = spec.builder_mode,
+        created_at    = spec.created_at,
+    )
+
+
+def _get_current_user(request: Request) -> str:
+    """Pobiera email użytkownika z JWT Bearer token (opcjonalne)."""
+    try:
+        from src.api.auth import get_google_auth_service
+        auth_header = request.headers.get("Authorization", "")
+        if auth_header.startswith("Bearer "):
+            token   = auth_header[7:]
+            service = get_google_auth_service()
+            payload = service.verify_session_jwt(token)
+            return payload.get("email", "anonymous")
+    except (ValueError, KeyError):
+        pass
+    return "anonymous"
+
+
+# ===========================================================================
+# Router: Google OAuth2 Authentication
+# ===========================================================================
+
+auth_router = APIRouter(prefix="/auth", tags=["auth"])
+
+
+@auth_router.get("/google", tags=["auth"])
+async def google_login() -> dict[str, str]:
+    """
+    Zwraca URL do logowania przez Google.
+
+    Jeśli GOOGLE_CLIENT_ID nie jest skonfigurowany, zwraca URL demo.
+    """
+    from src.api.auth import get_google_auth_service
+    service = get_google_auth_service()
+    if not service.is_configured:
+        return {
+            "status": "demo",
+            "message": "GOOGLE_CLIENT_ID nie ustawiony – użyj /auth/google/demo",
+            "demo_url": "/api/v1/auth/google/demo",
+        }
+    import secrets
+    state = secrets.token_urlsafe(16)
+    url   = service.get_authorization_url(state=state)
+    return {"status": "ok", "auth_url": url}
+
+
+@auth_router.get("/google/callback", tags=["auth"])
+async def google_callback(code: str, state: str = "") -> dict[str, str]:
+    """
+    Obsługuje callback OAuth2 od Google.
+    Wymienia authorization_code na JWT sesji.
+    """
+    from src.api.auth import get_google_auth_service
+    service = get_google_auth_service()
+    if not service.is_configured:
+        raise HTTPException(status_code=503, detail="Google OAuth nie skonfigurowany.")
+    try:
+        token_data = await service.exchange_code(code)
+        user_info  = await service.get_user_info(token_data["access_token"])
+        jwt_token  = service.create_session_jwt(user_info)
+        return {
+            "status":       "ok",
+            "access_token": jwt_token,
+            "token_type":   "Bearer",
+            "email":        user_info.get("email", ""),
+            "name":         user_info.get("name", ""),
+        }
+    except Exception as exc:
+        raise HTTPException(status_code=400, detail=f"OAuth błąd: {exc}") from exc
+
+
+@auth_router.get("/google/demo", tags=["auth"])
+async def google_demo_token(email: str = "demo@czlowiek-roku.local") -> dict[str, str]:
+    """
+    Generuje token demo (bez prawdziwego logowania Google).
+    Używany w środowiskach deweloperskich bez GOOGLE_CLIENT_ID.
+    """
+    from src.api.auth import get_google_auth_service
+    service   = get_google_auth_service()
+    jwt_token = service.get_demo_token(email=email)
+    return {
+        "status":       "demo",
+        "access_token": jwt_token,
+        "token_type":   "Bearer",
+        "email":        email,
+        "note":         "Token demonstracyjny – nie używaj w produkcji.",
+    }
+
+
+@auth_router.get("/me", tags=["auth"])
+async def get_current_user(request: Request) -> dict[str, Any]:
+    """
+    Zwraca profil zalogowanego użytkownika z JWT Bearer token.
+    """
+    from src.api.auth import get_google_auth_service
+    auth_header = request.headers.get("Authorization", "")
+    if not auth_header.startswith("Bearer "):
+        raise HTTPException(status_code=401, detail="Brak tokenu Bearer.")
+    token = auth_header[7:]
+    try:
+        service = get_google_auth_service()
+        payload = service.verify_session_jwt(token)
+        return {
+            "sub":     payload.get("sub", ""),
+            "email":   payload.get("email", ""),
+            "name":    payload.get("name", ""),
+            "picture": payload.get("picture", ""),
+        }
+    except ValueError as exc:
+        raise HTTPException(status_code=401, detail=str(exc)) from exc
+
+
+@auth_router.post("/logout", tags=["auth"])
+async def logout() -> dict[str, str]:
+    """Informuje o wylogowaniu (klient usuwa token lokalnie)."""
+    return {
+        "status": "logged_out",
+        "message": "Usuń token JWT po stronie klienta.",
+    }
+
+
+# ===========================================================================
+# Router: MCP (Model Context Protocol) Server
+# ===========================================================================
+
+mcp_router = APIRouter(prefix="/mcp", tags=["mcp"])
+
+
+@mcp_router.post("/rpc", tags=["mcp"])
+async def mcp_rpc(body: dict[str, Any]) -> dict[str, Any]:
+    """
+    Główny endpoint JSON-RPC 2.0 dla serwera MCP.
+
+    Obsługuje metody:
+      initialize, tools/list, tools/call,
+      resources/list, resources/read,
+      prompts/list, prompts/get, ping
+    """
+    from src.mcp.server import get_mcp_server
+    server = get_mcp_server()
+    return await server.handle_request(body)
+
+
+@mcp_router.get("/info", tags=["mcp"])
+async def mcp_info() -> dict[str, Any]:
+    """Zwraca informacje o serwerze MCP."""
+    from src.mcp.server import get_mcp_server
+    server = get_mcp_server()
+    return {
+        "name":    server.name,
+        "version": server.version,
+        "protocol": "2024-11-05",
+        "transport": "HTTP JSON-RPC 2.0",
+        "endpoint": "/api/v1/mcp/rpc",
+    }
+
+
+@mcp_router.get("/tools", tags=["mcp"])
+async def mcp_list_tools() -> dict[str, Any]:
+    """Zwraca listę dostępnych narzędzi MCP."""
+    from src.mcp.server import get_mcp_server
+    server = get_mcp_server()
+    result = await server.handle_request({"jsonrpc": "2.0", "id": 1, "method": "tools/list", "params": {}})
+    return result.get("result", {})
+
+
+@mcp_router.get("/resources", tags=["mcp"])
+async def mcp_list_resources() -> dict[str, Any]:
+    """Zwraca listę zasobów MCP."""
+    from src.mcp.server import get_mcp_server
+    server = get_mcp_server()
+    result = await server.handle_request({"jsonrpc": "2.0", "id": 1, "method": "resources/list", "params": {}})
+    return result.get("result", {})

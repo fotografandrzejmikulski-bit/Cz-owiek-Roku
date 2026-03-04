@@ -33,9 +33,13 @@ from src.agents import (
 )
 from src.api.routers import (
     agents_router,
+    auth_router,
+    builder_router,
     chat_router,
     edu_router,
     exotic_router,
+    historical_router,
+    mcp_router,
     pcg_router,
     registry_router,
     research_router,
@@ -163,6 +167,10 @@ app.include_router(pcg_router, prefix="/api/v1")
 app.include_router(youth_router, prefix="/api/v1")
 app.include_router(exotic_router, prefix="/api/v1")
 app.include_router(registry_router, prefix="/api/v1")
+app.include_router(historical_router, prefix="/api/v1")
+app.include_router(builder_router, prefix="/api/v1")
+app.include_router(auth_router, prefix="/api/v1")
+app.include_router(mcp_router, prefix="/api/v1")
 
 
 # ---------------------------------------------------------------------------
