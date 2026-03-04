@@ -57,12 +57,12 @@ def client(app_client):
 
 class TestAgentRegistry:
     def test_count_equals_6666(self, registry: AgentRegistry) -> None:
-        assert registry.count() == 6666
+        assert registry.count() == 51110
 
     def test_all_returns_list(self, registry: AgentRegistry) -> None:
         agents = registry.all()
         assert isinstance(agents, list)
-        assert len(agents) == 6666
+        assert len(agents) == 51110
 
     def test_all_agent_ids_unique(self, registry: AgentRegistry) -> None:
         ids = [e.agent_id for e in registry.all()]
@@ -75,9 +75,9 @@ class TestAgentRegistry:
         assert entry.agent_id == "agent_0001"
 
     def test_get_last_agent(self, registry: AgentRegistry) -> None:
-        entry = registry.get("agent_6666")
+        entry = registry.get("agent_51110")
         assert entry is not None
-        assert entry.agent_id == "agent_6666"
+        assert entry.agent_id == "agent_51110"
 
     def test_get_nonexistent_returns_none(self, registry: AgentRegistry) -> None:
         assert registry.get("agent_9999") is None
@@ -142,11 +142,11 @@ class TestAgentRegistry:
         assert page[0].agent_id == "agent_0001"
 
     def test_page_last(self, registry: AgentRegistry) -> None:
-        page = registry.page(offset=6660, limit=100)
-        assert len(page) == 6
+        page = registry.page(offset=51100, limit=100)
+        assert len(page) == 10  # 51110 - 51100
 
     def test_page_out_of_range_returns_empty(self, registry: AgentRegistry) -> None:
-        page = registry.page(offset=7000, limit=100)
+        page = registry.page(offset=60000, limit=100)
         assert page == []
 
     def test_safety_distribution(self, registry: AgentRegistry) -> None:
@@ -248,15 +248,15 @@ class TestRegistryAPI:
         resp = client.get("/api/v1/registry/agents")
         assert resp.status_code == 200
         data = resp.json()
-        assert data["total"] == 6666
+        assert data["total"] == 51110
         assert data["limit"] == 100
         assert len(data["agents"]) == 100
 
     def test_list_agents_pagination(self, client: "TestClient") -> None:
-        resp = client.get("/api/v1/registry/agents?offset=6600&limit=100")
+        resp = client.get("/api/v1/registry/agents?offset=51000&limit=200")
         assert resp.status_code == 200
         data = resp.json()
-        assert len(data["agents"]) == 66  # 6666 - 6600
+        assert len(data["agents"]) == 110  # 51110 - 51000
 
     def test_list_agents_limit_capped_at_500(self, client: "TestClient") -> None:
         resp = client.get("/api/v1/registry/agents?limit=9999")
@@ -270,12 +270,12 @@ class TestRegistryAPI:
         assert data["agent_id"] == "agent_0001"
 
     def test_get_agent_by_id_last(self, client: "TestClient") -> None:
-        resp = client.get("/api/v1/registry/agents/agent_6666")
+        resp = client.get("/api/v1/registry/agents/agent_51110")
         assert resp.status_code == 200
-        assert resp.json()["agent_id"] == "agent_6666"
+        assert resp.json()["agent_id"] == "agent_51110"
 
     def test_get_agent_not_found(self, client: "TestClient") -> None:
-        resp = client.get("/api/v1/registry/agents/agent_9999")
+        resp = client.get("/api/v1/registry/agents/agent_99999")
         assert resp.status_code == 404
 
     def test_search_endpoint(self, client: "TestClient") -> None:
@@ -319,10 +319,157 @@ class TestRegistryAPI:
 
     def test_session_for_multiple_agents(self, client: "TestClient") -> None:
         """Sprawdza że różne agenty zwracają poprawne dane."""
-        for aid in ("agent_0001", "agent_1000", "agent_3333", "agent_6666"):
+        for aid in ("agent_0001", "agent_1000", "agent_3333", "agent_51110"):
             resp = client.post(
                 "/api/v1/registry/session",
                 json={"agent_id": aid, "task": "Przedstaw się"},
             )
             assert resp.status_code == 200
             assert resp.json()["agent_id"] == aid
+
+
+# ---------------------------------------------------------------------------
+# Tests for the 44,444 expansion (total 51,110 agents)
+# ---------------------------------------------------------------------------
+
+class TestExpanded51110Registry:
+    """Weryfikuje rozszerzony rejestr 51 110 agentów."""
+
+    def test_total_count(self, registry: AgentRegistry) -> None:
+        assert registry.count() == 51110
+
+    def test_ids_continuous_start(self, registry: AgentRegistry) -> None:
+        assert registry.get("agent_0001") is not None
+
+    def test_ids_continuous_end(self, registry: AgentRegistry) -> None:
+        assert registry.get("agent_51110") is not None
+
+    def test_no_id_gaps_sample(self, registry: AgentRegistry) -> None:
+        """Sprawdza brak luk w próbce kluczowych ID."""
+        # Original agents use 4-digit padding (agent_0001..agent_6666)
+        # New agents use 5-digit padding (agent_06667..agent_51110)
+        for n in (1, 1000, 6666):
+            agent_id = f"agent_{n:04d}"
+            assert registry.get(agent_id) is not None, f"Brak agenta: {agent_id}"
+        for n in (6667, 10000, 25000, 51110):
+            agent_id = f"agent_{n:05d}"
+            assert registry.get(agent_id) is not None, f"Brak agenta: {agent_id}"
+
+    def test_all_ids_unique(self, registry: AgentRegistry) -> None:
+        ids = [e.agent_id for e in registry.all()]
+        assert len(set(ids)) == len(ids)
+
+    def test_at_least_500_unique_domains(self, registry: AgentRegistry) -> None:
+        domains = {e.domain for e in registry.all()}
+        assert len(domains) >= 500, f"Za mało domen: {len(domains)}"
+
+    def test_878_unique_domains(self, registry: AgentRegistry) -> None:
+        domains = {e.domain for e in registry.all()}
+        assert len(domains) >= 800
+
+    def test_new_domains_present(self, registry: AgentRegistry) -> None:
+        """Sprawdza obecność nowych dziedzin z ekspansji."""
+        domains = {e.domain for e in registry.all()}
+        new_domains_sample = [
+            "Astrofizyka", "Genetyka", "Biotechnologia", "Alergologia",
+            "Gastroenterologia", "Prawo Cyfrowe", "Choreografia",
+            "Cloud Computing", "Fintech", "Piłka Nożna", "Metaverse",
+            "Polityka Klimatyczna", "Gastronomia", "Fashion Design",
+            "Dziennikarstwo", "Kosmonautyka", "Energetyka Słoneczna",
+        ]
+        for d in new_domains_sample:
+            assert d in domains, f"Brak domeny: {d!r}"
+
+    def test_new_categories_present(self, registry: AgentRegistry) -> None:
+        categories = {e.category for e in registry.all()}
+        for cat in ("medical", "legal", "artistic", "environmental", "technical"):
+            assert cat in categories, f"Brak kategorii: {cat}"
+
+    def test_agents_after_6666_have_valid_structure(self, registry: AgentRegistry) -> None:
+        """Nowe agenty mają wszystkie wymagane pola."""
+        new_agents = [e for e in registry.all()
+                      if int(e.agent_id.split("_")[1]) > 6666]
+        assert len(new_agents) == 44444
+        for e in new_agents[:100]:  # sprawdź próbkę
+            assert e.agent_id
+            assert e.display_name
+            assert e.domain
+            assert e.role
+            assert e.specialization
+            assert e.mission
+            assert e.category
+            assert e.safety in ("safe", "monitored", "sandboxed")
+            assert len(e.system_prompt) >= 50
+
+    def test_medical_agents_present(self, registry: AgentRegistry) -> None:
+        medical = [e for e in registry.all() if e.category == "medical"]
+        assert len(medical) >= 1000
+
+    def test_technical_agents_present(self, registry: AgentRegistry) -> None:
+        technical = [e for e in registry.all() if e.category == "technical"]
+        assert len(technical) >= 500
+
+    def test_artistic_agents_present(self, registry: AgentRegistry) -> None:
+        artistic = [e for e in registry.all() if e.category == "artistic"]
+        assert len(artistic) >= 500
+
+    def test_legal_agents_present(self, registry: AgentRegistry) -> None:
+        legal = [e for e in registry.all() if e.category == "legal"]
+        assert len(legal) >= 500
+
+    def test_search_new_domain(self, registry: AgentRegistry) -> None:
+        results = registry.search("Astrofizyka", limit=50)
+        assert len(results) > 0
+        assert all("astrofizyka" in e.domain.lower() or
+                   "astrofizyka" in e.display_name.lower() or
+                   "astrofizyka" in e.mission.lower()
+                   for e in results)
+
+    def test_search_medical_domain(self, registry: AgentRegistry) -> None:
+        results = registry.search("Kardiochirurgia", limit=50)
+        assert len(results) > 0
+
+    def test_by_category_medical(self, registry: AgentRegistry) -> None:
+        results = registry.by_category("medical")
+        assert len(results) >= 1000
+
+    def test_page_covers_new_agents(self, registry: AgentRegistry) -> None:
+        page = registry.page(offset=6666, limit=100)
+        assert len(page) == 100
+        assert page[0].agent_id == "agent_06667"  # 5-digit padding for new agents
+
+    def test_safety_distribution_safe_dominant(self, registry: AgentRegistry) -> None:
+        safe_count = sum(1 for e in registry.all() if e.safety == "safe")
+        assert safe_count >= registry.count() * 0.80  # ≥80% safe
+
+    def test_sandboxed_agents_present(self, registry: AgentRegistry) -> None:
+        sandboxed = [e for e in registry.all() if e.safety == "sandboxed"]
+        assert len(sandboxed) >= 1
+
+
+class TestExpanded51110RegistryAPI:
+    def test_api_total_is_51110(self, client) -> None:
+        resp = client.get("/api/v1/registry/agents?limit=1")
+        assert resp.status_code == 200
+        assert resp.json()["total"] == 51110
+
+    def test_api_new_agent_accessible(self, client) -> None:
+        resp = client.get("/api/v1/registry/agents/agent_20000")
+        assert resp.status_code == 200
+        assert resp.json()["agent_id"] == "agent_20000"
+
+    def test_api_last_agent_accessible(self, client) -> None:
+        resp = client.get("/api/v1/registry/agents/agent_51110")
+        assert resp.status_code == 200
+
+    def test_api_search_returns_new_domains(self, client) -> None:
+        resp = client.get("/api/v1/registry/agents/search?q=Biotechnologia&limit=20")
+        assert resp.status_code == 200
+        assert resp.json()["count"] >= 1
+
+    def test_api_by_category_medical(self, client) -> None:
+        resp = client.get("/api/v1/registry/agents?category=medical&limit=100")
+        assert resp.status_code == 200
+        data = resp.json()
+        # Should have medical agents in the total registry
+        assert data["total"] >= 1000 or len(data["agents"]) > 0

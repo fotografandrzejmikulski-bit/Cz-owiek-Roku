@@ -761,11 +761,11 @@ async def exotic_session(
 
 
 # ===========================================================================
-# Router: Agent Registry (6666 unikalnych agentów)
+# Router: Agent Registry (51 110 unikalnych agentów)
 # ===========================================================================
 
 class RegistrySessionRequest(BaseModel):
-    """Żądanie sesji z agentem z rejestru 6666."""
+    """Żądanie sesji z agentem z rejestru 51 110."""
     agent_id: str = Field(..., description="ID agenta z rejestru (np. 'agent_0001')")
     task: str = Field(..., min_length=1, max_length=2000,
                       description="Zapytanie / zadanie dla agenta")
@@ -793,7 +793,7 @@ async def list_registry_agents(
     limit: int = 100,
 ) -> dict[str, Any]:
     """
-    Zwraca stronicowaną listę agentów z rejestru 6666.
+    Zwraca stronicowaną listę agentów z rejestru 51 110.
 
     Parametry:
         offset: pozycja startowa (domyślnie 0)
@@ -851,7 +851,7 @@ async def registry_session(
     req: RegistrySessionRequest, request: Request
 ) -> RegistrySessionResponse:
     """
-    Uruchamia sesję z wybranym agentem z rejestru 6666.
+    Uruchamia sesję z wybranym agentem z rejestru 51 110.
     """
     from src.agents.agent_registry import get_default_registry, DynamicRegistryAgent
     registry = get_default_registry()
