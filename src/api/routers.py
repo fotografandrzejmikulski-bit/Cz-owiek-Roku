@@ -887,9 +887,162 @@ async def registry_session(
     )
 
 
-# ===========================================================================
-# Helper: ładowanie danych historycznych agentów
-# ===========================================================================
+# ---------------------------------------------------------------------------
+# New: request/response models for domain browse and chat
+# ---------------------------------------------------------------------------
+
+class RegistryChatRequest(BaseModel):
+    """Żądanie rozmowy / zlecenia zadania wybranemu agentowi z rejestru."""
+    agent_id: str = Field(..., description="ID agenta z rejestru (np. 'agent_0001')")
+    message: str = Field(
+        ...,
+        min_length=1,
+        max_length=4000,  # 4000 znaków = górna granica dla długich zadań kodu/tekstu
+        description="Wiadomość / zadanie do agenta",
+    )
+    client_id: str = Field(default="user", description="Opcjonalne ID klienta")
+
+
+class RegistryChatResponse(BaseModel):
+    """Odpowiedź agenta na wiadomość czatu."""
+    agent_id:       str
+    display_name:   str
+    domain:         str
+    role:           str
+    specialization: str
+    category:       str
+    safety:         str
+    reply:          str
+
+
+# ---------------------------------------------------------------------------
+# GET /registry/domains  – lista dziedzin z liczbą agentów
+# ---------------------------------------------------------------------------
+
+@registry_router.get("/domains", tags=["registry"])
+async def list_registry_domains(
+    offset: int = 0,
+    limit: int = 100,
+) -> dict[str, Any]:
+    """
+    Zwraca listę wszystkich dziedzin (domen) wraz z liczbą agentów w każdej.
+
+    Parametry:
+        offset: pominięcie N pierwszych domen (do stronicowania)
+        limit:  maksymalna liczba domen w odpowiedzi (maks. 500)
+
+    Odpowiedź zawiera:
+        total_domains: łączna liczba unikalnych domen
+        total_agents:  łączna liczba agentów
+        offset / limit
+        domains: lista obiektów {domain, agent_count}
+    """
+    from src.agents.agent_registry import get_default_registry
+    registry = get_default_registry()
+    domain_map = registry.domains()          # dict[str, int] sorted alphabetically
+    domain_items = list(domain_map.items())  # [(domain, count), ...]
+    limit = min(limit, 500)
+    page = domain_items[offset: offset + limit]
+    return {
+        "total_domains": len(domain_map),
+        "total_agents":  registry.count(),
+        "offset":        offset,
+        "limit":         limit,
+        "domains": [{"domain": d, "agent_count": c} for d, c in page],
+    }
+
+
+# ---------------------------------------------------------------------------
+# GET /registry/domains/{domain}  – agenci w danej dziedzinie
+# ---------------------------------------------------------------------------
+
+@registry_router.get("/domains/{domain}", tags=["registry"])
+async def list_agents_by_domain(
+    domain: str,
+    offset: int = 0,
+    limit: int = 50,
+) -> dict[str, Any]:
+    """
+    Zwraca stronicowaną listę agentów należących do podanej dziedziny.
+
+    Parametry:
+        domain: nazwa dziedziny (np. 'Python Programming', 'Silnik Unreal Engine')
+        offset: pozycja startowa
+        limit:  liczba wyników (maks. 500)
+
+    Odpowiedź zawiera:
+        domain, total, offset, limit, agents: [...]
+    """
+    from src.agents.agent_registry import get_default_registry
+    registry = get_default_registry()
+    agents_in_domain = registry.by_domain(domain)
+    if not agents_in_domain:
+        raise HTTPException(
+            status_code=404,
+            detail=f"Dziedzina '{domain}' nie istnieje lub nie ma agentów.",
+        )
+    limit = min(limit, 500)
+    page = agents_in_domain[offset: offset + limit]
+    return {
+        "domain":  domain,
+        "total":   len(agents_in_domain),
+        "offset":  offset,
+        "limit":   limit,
+        "agents":  [e.to_dict() for e in page],
+    }
+
+
+# ---------------------------------------------------------------------------
+# POST /registry/chat  – rozmowa / zlecenie zadania agentowi
+# ---------------------------------------------------------------------------
+
+@registry_router.post("/chat", response_model=RegistryChatResponse, tags=["registry"])
+async def registry_chat(
+    req: RegistryChatRequest, request: Request
+) -> RegistryChatResponse:
+    """
+    Wyślij wiadomość / zadanie do wybranego agenta z rejestru 55 555.
+
+    Agent jest wybierany po agent_id. Jego unikalna nazwa (display_name),
+    dziedzina (domain), rola i specjalizacja są zwracane razem z odpowiedzią.
+
+    To jest główny endpoint do rozmawiania z agentami i zlecania im zadań.
+    """
+    from src.agents.agent_registry import get_default_registry, DynamicRegistryAgent
+    registry = get_default_registry()
+    entry = registry.get(req.agent_id)
+    if entry is None:
+        raise HTTPException(
+            status_code=404,
+            detail=f"Agent '{req.agent_id}' nie istnieje w rejestrze.",
+        )
+
+    broker = getattr(request.app.state, "broker", None)
+    if broker is None:
+        raise HTTPException(status_code=503, detail="Broker niedostępny.")
+
+    agent = DynamicRegistryAgent(entry=entry, broker=broker)
+    message = AgentMessage(
+        type=MessageType.TASK_REQUEST,
+        sender_id=req.client_id,
+        receiver_id=req.agent_id,
+        payload={"task": req.message},
+    )
+    result = await agent.process_task(message)
+
+    return RegistryChatResponse(
+        agent_id       = result.get("agent_id", req.agent_id),
+        display_name   = result.get("display_name", entry.display_name),
+        domain         = result.get("domain", entry.domain),
+        role           = result.get("role", entry.role),
+        specialization = result.get("specialization", entry.specialization),
+        category       = result.get("category", entry.category),
+        safety         = result.get("safety", entry.safety),
+        reply          = result.get("response", ""),
+    )
+
+
+
 
 def _load_historical_agents() -> list[dict]:
     """Ładuje dane z data/historical_agents.json."""

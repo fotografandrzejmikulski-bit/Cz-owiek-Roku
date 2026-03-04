@@ -595,3 +595,184 @@ class TestCodingGameExpansion55555:
     def test_search_fantasy_writing(self, registry: AgentRegistry) -> None:
         results = registry.search("Fantasy", limit=20)
         assert len(results) > 0
+
+
+# ---------------------------------------------------------------------------
+# Tests for: unique names, domain browsing, and chat/task endpoints
+# ---------------------------------------------------------------------------
+
+class TestUniqueDisplayNames:
+    """Każdy z 55,555 agentów musi mieć unikalną nazwę display_name."""
+
+    def test_all_display_names_unique(self, registry: AgentRegistry) -> None:
+        names = [e.display_name for e in registry.all()]
+        assert len(set(names)) == len(names), (
+            f"Znaleziono duplikaty: {len(names) - len(set(names))} powtórzeń"
+        )
+
+    def test_display_names_not_empty(self, registry: AgentRegistry) -> None:
+        for e in registry.all():
+            assert e.display_name, f"{e.agent_id} ma pustą nazwę"
+
+    def test_first_few_agents_have_unique_names(self, registry: AgentRegistry) -> None:
+        first_100 = registry.page(offset=0, limit=100)
+        names = [e.display_name for e in first_100]
+        assert len(set(names)) == len(names)
+
+
+class TestDomainMethods:
+    """Testy metod AgentRegistry.by_domain() i .domains()."""
+
+    def test_domains_returns_dict(self, registry: AgentRegistry) -> None:
+        d = registry.domains()
+        assert isinstance(d, dict)
+        assert len(d) >= 1000, f"Za mało domen: {len(d)}"
+
+    def test_domains_total_equals_count(self, registry: AgentRegistry) -> None:
+        d = registry.domains()
+        total = sum(d.values())
+        assert total == registry.count()
+
+    def test_domains_sorted_alphabetically(self, registry: AgentRegistry) -> None:
+        keys = list(registry.domains().keys())
+        assert keys == sorted(keys)
+
+    def test_by_domain_python(self, registry: AgentRegistry) -> None:
+        agents = registry.by_domain("Python Programming")
+        assert len(agents) >= 1
+        for a in agents:
+            assert a.domain == "Python Programming"
+
+    def test_by_domain_unreal(self, registry: AgentRegistry) -> None:
+        agents = registry.by_domain("Silnik Unreal Engine")
+        assert len(agents) >= 1
+
+    def test_by_domain_unknown_returns_empty(self, registry: AgentRegistry) -> None:
+        agents = registry.by_domain("Nieistniejąca Dziedzina XYZ99")
+        assert agents == []
+
+    def test_by_domain_count_matches_domains_dict(self, registry: AgentRegistry) -> None:
+        d = registry.domains()
+        sample_domain = next(iter(d))
+        assert len(registry.by_domain(sample_domain)) == d[sample_domain]
+
+
+class TestDomainBrowseAPI:
+    """Testy endpointów GET /api/v1/registry/domains."""
+
+    def test_list_domains_status_200(self, client) -> None:
+        resp = client.get("/api/v1/registry/domains?limit=10")
+        assert resp.status_code == 200
+
+    def test_list_domains_total_correct(self, client) -> None:
+        resp = client.get("/api/v1/registry/domains?limit=1")
+        data = resp.json()
+        assert data["total_domains"] >= 1000
+        assert data["total_agents"] == 55555
+
+    def test_list_domains_pagination(self, client) -> None:
+        resp = client.get("/api/v1/registry/domains?offset=0&limit=5")
+        data = resp.json()
+        assert len(data["domains"]) == 5
+        assert data["offset"] == 0
+        assert data["limit"] == 5
+
+    def test_list_domains_each_has_count(self, client) -> None:
+        resp = client.get("/api/v1/registry/domains?limit=20")
+        for item in resp.json()["domains"]:
+            assert "domain" in item
+            assert "agent_count" in item
+            assert item["agent_count"] >= 1
+
+    def test_list_domains_by_offset(self, client) -> None:
+        r1 = client.get("/api/v1/registry/domains?offset=0&limit=3").json()["domains"]
+        r2 = client.get("/api/v1/registry/domains?offset=3&limit=3").json()["domains"]
+        names1 = [d["domain"] for d in r1]
+        names2 = [d["domain"] for d in r2]
+        assert set(names1).isdisjoint(set(names2))
+
+    def test_get_agents_in_domain_python(self, client) -> None:
+        resp = client.get("/api/v1/registry/domains/Python%20Programming")
+        assert resp.status_code == 200
+        data = resp.json()
+        assert data["domain"] == "Python Programming"
+        assert data["total"] >= 1
+        assert len(data["agents"]) >= 1
+
+    def test_get_agents_in_domain_pagination(self, client) -> None:
+        resp = client.get(
+            "/api/v1/registry/domains/Python%20Programming?offset=0&limit=3"
+        )
+        assert resp.status_code == 200
+        data = resp.json()
+        assert len(data["agents"]) <= 3
+
+    def test_get_agents_in_domain_unknown_404(self, client) -> None:
+        resp = client.get("/api/v1/registry/domains/ZupelnieFikcyjnaDomena9999")
+        assert resp.status_code == 404
+
+    def test_get_agents_in_domain_all_belong_to_domain(self, client) -> None:
+        resp = client.get(
+            "/api/v1/registry/domains/Silnik%20Unreal%20Engine?limit=50"
+        )
+        assert resp.status_code == 200
+        for agent in resp.json()["agents"]:
+            assert agent["domain"] == "Silnik Unreal Engine"
+
+
+class TestRegistryChatAPI:
+    """Testy endpointu POST /api/v1/registry/chat."""
+
+    def test_chat_returns_200(self, client) -> None:
+        resp = client.post(
+            "/api/v1/registry/chat",
+            json={"agent_id": "agent_0001", "message": "Przedstaw się krótko."},
+        )
+        assert resp.status_code == 200
+
+    def test_chat_response_has_required_fields(self, client) -> None:
+        resp = client.post(
+            "/api/v1/registry/chat",
+            json={"agent_id": "agent_0001", "message": "Co potrafisz?"},
+        )
+        data = resp.json()
+        for field in ("agent_id", "display_name", "domain", "role",
+                      "specialization", "category", "safety", "reply"):
+            assert field in data, f"Brak pola: {field}"
+
+    def test_chat_agent_id_matches_request(self, client) -> None:
+        resp = client.post(
+            "/api/v1/registry/chat",
+            json={"agent_id": "agent_55555", "message": "Jakie masz umiejętności?"},
+        )
+        assert resp.status_code == 200
+        assert resp.json()["agent_id"] == "agent_55555"
+
+    def test_chat_display_name_not_empty(self, client) -> None:
+        resp = client.post(
+            "/api/v1/registry/chat",
+            json={"agent_id": "agent_10000", "message": "Podaj przykład kodu."},
+        )
+        assert resp.json()["display_name"] != ""
+
+    def test_chat_unknown_agent_404(self, client) -> None:
+        resp = client.post(
+            "/api/v1/registry/chat",
+            json={"agent_id": "agent_99999", "message": "Hello!"},
+        )
+        assert resp.status_code == 404
+
+    def test_chat_with_coding_agent(self, client) -> None:
+        # Find an agent in Python Programming domain via API
+        domain_resp = client.get(
+            "/api/v1/registry/domains/Python%20Programming?limit=1"
+        )
+        agent_id = domain_resp.json()["agents"][0]["agent_id"]
+        chat_resp = client.post(
+            "/api/v1/registry/chat",
+            json={"agent_id": agent_id, "message": "Napisz przykładową funkcję Python."},
+        )
+        assert chat_resp.status_code == 200
+        data = chat_resp.json()
+        assert data["domain"] == "Python Programming"
+        assert data["reply"] != ""

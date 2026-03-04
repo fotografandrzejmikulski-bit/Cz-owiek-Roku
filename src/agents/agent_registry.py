@@ -86,11 +86,13 @@ class AgentRegistry:
     Rejestr agentów wczytywany z pliku JSON.
 
     Metody:
-        get(agent_id)  → AgentRegistryEntry | None
-        all()          → list[AgentRegistryEntry]
-        count()        → int
-        search(query)  → list[AgentRegistryEntry]
-        by_category(c) → list[AgentRegistryEntry]
+        get(agent_id)       → AgentRegistryEntry | None
+        all()               → list[AgentRegistryEntry]
+        count()             → int
+        search(query)       → list[AgentRegistryEntry]
+        by_category(c)      → list[AgentRegistryEntry]
+        by_domain(domain)   → list[AgentRegistryEntry]
+        domains()           → dict[str, int]   (domena → liczba agentów)
     """
 
     def __init__(self, path: Path = _DEFAULT_REGISTRY_PATH) -> None:
@@ -138,6 +140,16 @@ class AgentRegistry:
 
     def by_category(self, category: str) -> list[AgentRegistryEntry]:
         return [e for e in self._entries.values() if e.category == category]
+
+    def by_domain(self, domain: str) -> list[AgentRegistryEntry]:
+        """Zwraca wszystkich agentów należących do podanej dziedziny."""
+        return [e for e in self._entries.values() if e.domain == domain]
+
+    def domains(self) -> dict[str, int]:
+        """Zwraca słownik {domena: liczba_agentów} posortowany alfabetycznie."""
+        from collections import Counter
+        counts: Counter = Counter(e.domain for e in self._entries.values())
+        return dict(sorted(counts.items()))
 
     def page(
         self,
